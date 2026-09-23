@@ -1,0 +1,20 @@
+services:
+  db:
+    # pgvector image = plain Postgres 16 + the vector extension we'll use in
+    # phase 3 for semantic search over news and annual reports.
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: nse
+      POSTGRES_PASSWORD: nse
+      POSTGRES_DB: nse
+    ports:
+      - "5432:5432"
+    volumes:
+      - nse_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nse"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  nse_pgdata:

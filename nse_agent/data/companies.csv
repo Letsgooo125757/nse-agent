@@ -1,0 +1,66 @@
+ticker,name,sector_code,market_segment,security_type,is_active,aliases
+ABSA,Absa Bank Kenya Plc,BANKING,,equity,true,Absa Bank Kenya|Absa Kenya|Absa Bank
+ARM,ARM Cement Limited,CONSTRUCTION,,equity,false,ARM Cement|Athi River Mining
+BAMB,Bamburi Cement Limited,CONSTRUCTION,,equity,true,Bamburi Cement|Bamburi
+BAT,British American Tobacco Kenya Plc,MANUFACTURING,,equity,true,British American Tobacco Kenya|BAT Kenya
+BKG,BK Group Plc,BANKING,,equity,true,BK Group|Bank of Kigali
+BOC,BOC Kenya Plc,MANUFACTURING,,equity,true,BOC Kenya
+BRIT,Britam Holdings Plc,INSURANCE,,equity,true,Britam
+CABL,East African Cables Plc,CONSTRUCTION,,equity,true,East African Cables|EA Cables
+CARB,Carbacid Investments Plc,MANUFACTURING,,equity,true,Carbacid
+CGEN,Car and General (Kenya) Plc,AUTOMOBILES,,equity,true,Car and General|Car & General
+CIC,CIC Insurance Group Plc,INSURANCE,,equity,true,CIC Insurance|CIC Group
+COOP,Co-operative Bank of Kenya Limited,BANKING,,equity,true,Co-operative Bank|Co-op Bank|Cooperative Bank
+CRWN,Crown Paints Kenya Plc,CONSTRUCTION,,equity,true,Crown Paints
+CTUM,Centum Investment Company Plc,INVESTMENT,,equity,true,Centum Investment|Centum
+DCON,Deacons (East Africa) Plc,COMMERCIAL,,equity,true,Deacons East Africa|Deacons
+DTK,Diamond Trust Bank Kenya Limited,BANKING,,equity,true,Diamond Trust Bank|DTB Kenya|DTB
+EABL,East African Breweries Plc,MANUFACTURING,,equity,true,East African Breweries|EABL|Kenya Breweries
+EGAD,Eaagads Limited,AGRICULTURAL,,equity,true,Eaagads
+EQTY,Equity Group Holdings Plc,BANKING,,equity,true,Equity Group|Equity Bank
+EVRD,Eveready East Africa Plc,MANUFACTURING,,equity,true,Eveready East Africa|Eveready
+FTGH,Flame Tree Group Holdings Limited,MANUFACTURING,,equity,true,Flame Tree Group|Flame Tree
+GLD,Absa NewGold ETF,ETF,ETF,etf,true,NewGold ETF|Absa NewGold
+HAFR,Home Afrika Limited,INVESTMENT,,equity,true,Home Afrika
+HBE,Homeboyz Entertainment Plc,COMMERCIAL,,equity,true,Homeboyz Entertainment|Homeboyz
+HFCK,HF Group Plc,BANKING,,equity,true,HF Group|HFC Kenya|Housing Finance
+IMH,I&M Group Plc,BANKING,,equity,true,I&M Group|I&M Bank|I&M Holdings
+JUB,Jubilee Holdings Limited,INSURANCE,,equity,true,Jubilee Holdings|Jubilee Insurance
+KAPC,Kapchorua Tea Kenya Plc,AGRICULTURAL,,equity,true,Kapchorua Tea|Kapchorua
+KCB,KCB Group Plc,BANKING,,equity,true,KCB Group|KCB Bank|KCB
+KEGN,KenGen Plc,ENERGY,,equity,true,KenGen|Kenya Electricity Generating Company
+KNRE,Kenya Reinsurance Corporation Limited,INSURANCE,,equity,true,Kenya Re|Kenya Reinsurance
+KPLC,Kenya Power & Lighting Company Plc,ENERGY,,equity,true,Kenya Power|KPLC
+KPLC-P4,Kenya Power 4% Preference Shares,ENERGY,PREF,preference,true,
+KPLC-P7,Kenya Power 7% Preference Shares,ENERGY,PREF,preference,true,
+KQ,Kenya Airways Plc,COMMERCIAL,,equity,true,Kenya Airways|KQ
+KUKZ,Kakuzi Plc,AGRICULTURAL,,equity,true,Kakuzi
+KURV,Kurwitu Ventures Limited,INVESTMENT,,equity,true,Kurwitu Ventures|Kurwitu
+LAPR,LAPTRUST Imara I-REIT,REIT,REIT,reit,true,Laptrust Imara|Imara I-REIT
+LBTY,Liberty Kenya Holdings Plc,INSURANCE,,equity,true,Liberty Kenya
+LIMT,Limuru Tea Plc,AGRICULTURAL,,equity,true,Limuru Tea
+LKL,Longhorn Publishers Plc,COMMERCIAL,,equity,true,Longhorn Publishers
+MSC,Mumias Sugar Company Limited,MANUFACTURING,,equity,false,Mumias Sugar|Mumias
+NBV,Nairobi Business Ventures Limited,COMMERCIAL,,equity,true,Nairobi Business Ventures
+NCBA,NCBA Group Plc,BANKING,,equity,true,NCBA Group|NCBA Bank|NCBA
+NMG,Nation Media Group Plc,COMMERCIAL,,equity,true,Nation Media Group|Nation Media
+NSE,Nairobi Securities Exchange Plc,INVESTMENT_SERVICES,,equity,true,NSE Plc|Nairobi Securities Exchange Plc|NSE shares
+OCH,Olympia Capital Holdings Limited,INVESTMENT,,equity,true,Olympia Capital
+ORCH,Kenya Orchards Limited,MANUFACTURING,,equity,true,Kenya Orchards
+PORT,East African Portland Cement Plc,CONSTRUCTION,,equity,true,East African Portland|EAPCC|Portland Cement
+SASN,Sasini Plc,AGRICULTURAL,,equity,true,Sasini
+SBIC,Stanbic Holdings Plc,BANKING,,equity,true,Stanbic Holdings|Stanbic Bank Kenya|Stanbic
+SCAN,WPP Scangroup Plc,COMMERCIAL,,equity,true,WPP Scangroup|Scangroup
+SCBK,Standard Chartered Bank Kenya Limited,BANKING,,equity,true,Standard Chartered|StanChart
+SCOM,Safaricom Plc,TELECOM,,equity,true,Safaricom|M-Pesa|M-PESA|Mpesa
+SGL,Standard Group Plc,COMMERCIAL,,equity,true,Standard Group|Standard Media Group
+SLAM,Sanlam Kenya Plc,INSURANCE,,equity,true,Sanlam Kenya|Sanlam
+SMER,Sameer Africa Plc,COMMERCIAL,,equity,true,Sameer Africa
+TCL,TransCentury Plc,INVESTMENT,,equity,true,TransCentury|Trans Century
+TOTL,TotalEnergies Marketing Kenya Plc,ENERGY,,equity,true,TotalEnergies Marketing Kenya|TotalEnergies Kenya|Total Kenya
+TPSE,TPS Eastern Africa (Serena) Plc,COMMERCIAL,,equity,true,TPS Eastern Africa|Serena Hotels|TPS Serena
+UCHM,Uchumi Supermarkets Plc,COMMERCIAL,,equity,true,Uchumi Supermarkets|Uchumi
+UMME,Umeme Limited,ENERGY,,equity,true,Umeme
+UNGA,Unga Group Plc,MANUFACTURING,,equity,true,Unga Group|Unga
+WTK,Williamson Tea Kenya Plc,AGRICULTURAL,,equity,true,Williamson Tea
+XPRS,Express Kenya Plc,COMMERCIAL,,equity,true,Express Kenya

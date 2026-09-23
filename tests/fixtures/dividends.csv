@@ -1,0 +1,4 @@
+ticker,action_type,amount_per_share,book_closure_date,payment_date,financial_year
+SCOM,final_dividend,0.65,2099-07-31,2099-08-31,2099
+SCOM,interim_dividend,0.55,2024-02-02,2024-03-31,2024
+KCB,bonus,1,2024-01-01,,2024
