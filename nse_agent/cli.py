@@ -8,10 +8,11 @@ import time
 from datetime import datetime, time as dtime
 from pathlib import Path
 
-from . import loaders
+from . import commands, loaders
 from .config import NAIROBI_TZ, get_settings
 from .db import apply_schema, connect
 from .sources import afx, csv_files, rss
+from .portfolio import PortfolioError
 from .sources.base import SourceError
 
 log = logging.getLogger("nse_agent")
@@ -162,6 +163,11 @@ def cmd_daily(args) -> int:
         print(f"prices FAILED — {exc}", file=sys.stderr)
         rc = 1
     rc |= cmd_ingest_news(argparse.Namespace(source=None))
+    # then alerts for every profile
+    with connect() as conn:
+        pids = [r["id"] for r in conn.execute("SELECT id FROM investor_profiles ORDER BY id")]
+    for pid in pids:
+        commands.cmd_alerts_run(argparse.Namespace(profile=pid, date=None))
     return rc
 
 
@@ -191,7 +197,7 @@ def cmd_status(args) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="nse-agent", description="NSE data pipeline (phase 1)")
+    p = argparse.ArgumentParser(prog="nse-agent", description="NSE investment research copilot")
     p.add_argument("-v", "--verbose", action="store_true")
     sub = p.add_subparsers(dest="command", required=True)
 
@@ -223,7 +229,8 @@ def build_parser() -> argparse.ArgumentParser:
         sp.set_defaults(func=func)
 
     sub.add_parser("retag-news", help="re-run ticker/topic tagging on stored news").set_defaults(func=cmd_retag_news)
-    sub.add_parser("daily", help="prices + news (schedule this after 15:00 EAT)").set_defaults(func=cmd_daily)
+    commands.register(sub)
+    sub.add_parser("daily", help="prices + news + alerts (schedule this after 15:00 EAT)").set_defaults(func=cmd_daily)
     sub.add_parser("status", help="row counts and last run of each job").set_defaults(func=cmd_status)
     return p
 
@@ -234,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
                         format="%(levelname)s %(name)s: %(message)s")
     try:
         return args.func(args)
-    except (SourceError, csv_files.CsvFormatError) as exc:
+    except (SourceError, csv_files.CsvFormatError, PortfolioError, LookupError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

@@ -223,6 +223,85 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE INDEX IF NOT EXISTS idx_tx_profile ON transactions(profile_id, trade_date);
 
 -- ---------------------------------------------------------------------
+-- Phase 2: financial profile, plan, non-equity holdings, alerts
+-- ALTER ... IF NOT EXISTS so databases created in Phase 1 upgrade in place.
+-- ---------------------------------------------------------------------
+ALTER TABLE investor_profiles
+    ADD COLUMN IF NOT EXISTS monthly_income          NUMERIC(14,2) CHECK (monthly_income IS NULL OR monthly_income >= 0),
+    ADD COLUMN IF NOT EXISTS monthly_expenses        NUMERIC(14,2) CHECK (monthly_expenses IS NULL OR monthly_expenses >= 0),
+    ADD COLUMN IF NOT EXISTS high_interest_debt      NUMERIC(14,2) NOT NULL DEFAULT 0,  -- mobile loans, cards, >~15% p.a.
+    ADD COLUMN IF NOT EXISTS emergency_months_target INTEGER NOT NULL DEFAULT 6,
+    ADD COLUMN IF NOT EXISTS risk_score              INTEGER CHECK (risk_score IS NULL OR risk_score BETWEEN 0 AND 100),
+    ADD COLUMN IF NOT EXISTS questionnaire           JSONB,   -- raw answers, so the score is auditable
+    ADD COLUMN IF NOT EXISTS max_stock_pct           NUMERIC(5,2) NOT NULL DEFAULT 20,  -- of the equity sleeve
+    ADD COLUMN IF NOT EXISTS max_sector_pct          NUMERIC(5,2) NOT NULL DEFAULT 40,
+    ADD COLUMN IF NOT EXISTS updated_at              TIMESTAMPTZ NOT NULL DEFAULT now();
+
+-- Withholding tax on dividends (5% for Kenyan residents), kept apart from
+-- trading fees so income can be reported gross and net.
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS tax NUMERIC(14,2) NOT NULL DEFAULT 0;
+
+-- Money outside NSE shares: emergency cash, MMFs, T-bills/bonds, SACCO.
+-- Needed to judge allocation across the whole portfolio, not just stocks.
+-- The emergency fund is the sum of 'emergency_cash' rows (single source of truth).
+CREATE TABLE IF NOT EXISTS other_holdings (
+    id                  BIGSERIAL PRIMARY KEY,
+    profile_id          BIGINT NOT NULL REFERENCES investor_profiles(id) ON DELETE CASCADE,
+    asset_class         TEXT NOT NULL CHECK (asset_class IN
+                        ('emergency_cash','money_market','government_securities','sacco','other')),
+    name                TEXT NOT NULL,                     -- e.g. 'CIC MMF', '364-day T-bill'
+    amount              NUMERIC(16,2) NOT NULL CHECK (amount >= 0),
+    expected_yield_pct  NUMERIC(6,3),
+    maturity_date       DATE,
+    as_of               DATE NOT NULL DEFAULT CURRENT_DATE,
+    UNIQUE (profile_id, asset_class, name)
+);
+
+-- The latest plan produced by `nse-agent plan`, used for drift alerts.
+CREATE TABLE IF NOT EXISTS allocation_targets (
+    profile_id   BIGINT NOT NULL REFERENCES investor_profiles(id) ON DELETE CASCADE,
+    asset_class  TEXT NOT NULL CHECK (asset_class IN
+                 ('emergency_cash','money_market','government_securities','nse_equities')),
+    target_pct   NUMERIC(5,2) NOT NULL CHECK (target_pct BETWEEN 0 AND 100),
+    computed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (profile_id, asset_class)
+);
+
+CREATE TABLE IF NOT EXISTS watchlist (
+    profile_id  BIGINT NOT NULL REFERENCES investor_profiles(id) ON DELETE CASCADE,
+    ticker      TEXT NOT NULL REFERENCES companies(ticker) ON UPDATE CASCADE,
+    note        TEXT,
+    added_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (profile_id, ticker)
+);
+
+CREATE TABLE IF NOT EXISTS price_alert_rules (
+    id          BIGSERIAL PRIMARY KEY,
+    profile_id  BIGINT NOT NULL REFERENCES investor_profiles(id) ON DELETE CASCADE,
+    ticker      TEXT NOT NULL REFERENCES companies(ticker) ON UPDATE CASCADE,
+    condition   TEXT NOT NULL CHECK (condition IN ('above','below','move_pct')),
+    threshold   NUMERIC(14,4) NOT NULL CHECK (threshold > 0),
+    active      BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (profile_id, ticker, condition, threshold)
+);
+
+CREATE TABLE IF NOT EXISTS alerts (
+    id               BIGSERIAL PRIMARY KEY,
+    profile_id       BIGINT NOT NULL REFERENCES investor_profiles(id) ON DELETE CASCADE,
+    alert_type       TEXT NOT NULL,          -- price_rule, big_move, 52w_high, book_closure, ...
+    severity         TEXT NOT NULL CHECK (severity IN ('info','warning','action')),
+    ticker           TEXT REFERENCES companies(ticker) ON UPDATE CASCADE,
+    message          TEXT NOT NULL,
+    details          JSONB NOT NULL DEFAULT '{}',
+    dedupe_key       TEXT NOT NULL,          -- same event is only raised once
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    acknowledged_at  TIMESTAMPTZ,
+    UNIQUE (profile_id, dedupe_key)
+);
+CREATE INDEX IF NOT EXISTS idx_alerts_open ON alerts(profile_id, created_at DESC) WHERE acknowledged_at IS NULL;
+
+-- ---------------------------------------------------------------------
 -- Views the agent's tools will query
 -- ---------------------------------------------------------------------
 

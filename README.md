@@ -1,8 +1,11 @@
-# NSE Investment Copilot: Phase 1 (Data Pipeline)
+# NSE Investment Copilot
 
-This is the data foundation for a personal AI research assistant covering the
-Nairobi Securities Exchange. Phase 1 collects and cleans the data and stores it
-in PostgreSQL. Later phases add the agent that reasons over it.
+A personal research assistant for investing on the Nairobi Securities Exchange.
+
+- **Phase 1, data:** prices, news, fundamentals and macro data in PostgreSQL.
+- **Phase 2, you:** a risk profile, a rules-based plan for each month's
+  money, a portfolio tracker with real NSE fees, and alerts.
+- **Phase 3, next:** an LLM agent that explains all of this in plain language.
 
 ```
             ┌───────────────┐   ┌──────────────┐   ┌────────────────┐
@@ -20,13 +23,16 @@ in PostgreSQL. Later phases add the agent that reasons over it.
  Postgres → │ companies · daily_prices · index_values ·            │
             │ financial_statements · corporate_actions ·           │
             │ news_articles · news_ticker_links · macro_* ·        │
-            │ ingestion_runs · investor_profiles · transactions    │
+            │ ingestion_runs · investor_profiles · transactions ·  │
+            │ other_holdings · watchlist · price_alert_rules ·     │
+            │ allocation_targets · alerts                          │
             │ views: v_latest_prices, v_valuation,                 │
             │        v_upcoming_dividends, v_ticker_news,          │
             │        v_pipeline_health                             │
             └──────────────────────────────────────────────────────┘
                                        ▲
-                     Phase 2+: agent tools query these views
+          Phase 2: profile → plan · portfolio · alerts (commands below)
+          Phase 3: agent tools query the same tables and views
 ```
 
 ## Quick start
@@ -60,11 +66,90 @@ nse-agent status                     # row counts + last run of every job
 | `import-dividends FILE` | Loads dividend history. Feeds `v_upcoming_dividends`. |
 | `import-macro FILE` | Loads CBK rate, T-bill yields, USD/KES, inflation, Brent and the Fed rate. |
 | `retag-news` | Re-runs tagging over all stored news after you change aliases. |
-| `daily` | Runs `ingest-prices` then `ingest-news`. This is the command to schedule. |
+| `daily` | Runs `ingest-prices`, `ingest-news`, then `alerts run` for every profile. This is the command to schedule. |
 | `status` | Shows data counts and pipeline health. |
 
 Header-only CSV templates are in `templates/`. Enter amounts in full KES, not
 KES '000 as many annual reports show them.
+
+## Phase 2: your profile, plan, portfolio and alerts
+
+```bash
+nse-agent profile create                 # 5 money questions + 7 risk questions
+nse-agent plan                           # what to do with this month's money, and why
+nse-agent holding set money_market "CIC MMF" 30000 --yield-pct 13
+nse-agent buy SCOM 1000 15.50            # fees estimated; add --fees X from your contract note
+nse-agent dividend SCOM 0.65             # shares held + 5% withholding tax worked out for you
+nse-agent portfolio                      # holdings, gains, dividends, sector split, total wealth
+nse-agent watch EQTY KCB
+nse-agent alert-rule add SCOM below 14
+nse-agent alerts run                     # then: alerts list / alerts ack all
+```
+
+| Command | What it does |
+|---|---|
+| `profile create [--from-file F] [--update ID]` / `show` / `list` | Questionnaire, or a JSON file (`templates/profile.json`). |
+| `plan` | Priorities plus a target mix, and where this month's money goes. Saves targets for drift alerts. |
+| `buy` / `sell TICKER QTY PRICE [--date] [--fees]` | Records a trade. Blocks selling shares you don't have. |
+| `dividend TICKER DPS [--shares] [--tax]` | Records dividend income, gross and net. |
+| `bonus TICKER NEW OLD` | Records a bonus issue, e.g. `bonus KCB 1 10` for 1 new share per 10 held. |
+| `import-transactions FILE` | Loads trades from a CSV (`templates/transactions.csv`). |
+| `transactions`, `delete-transaction ID` | Lists or fixes trades. |
+| `holding set CLASS NAME AMOUNT` / `holding list` | Emergency cash, MMF, T-bills/bonds, SACCO. |
+| `portfolio` | Average-cost P&L, weights, sectors, dividends, and exit fees. |
+| `fees AMOUNT` | Full NSE cost breakdown for a trade size. |
+| `companies [--sector X]` | Lists tickers. |
+| `watch T.. [--remove]` | Manages the watchlist. |
+| `alert-rule add TICKER above/below/move_pct N` | Adds a price alert. |
+| `alerts run [--date]` / `list [--all]` / `ack IDS\|all` | Evaluates, shows or clears alerts. |
+
+### How the plan works (`nse_agent/planner.py`)
+
+The numbers come from fixed rules, not an AI model, so every figure can be
+traced and tested:
+
+1. **Pay off high-interest debt first.** Mobile loans and cards cost more
+   than shares reliably earn.
+2. **Build an emergency fund** of 6 months' expenses (configurable) in cash
+   or an MMF. Without it, an emergency could force you to sell shares at the
+   wrong time.
+3. **Set a target mix for long-term money.** Your share of NSE equities is
+   `20% + 0.6 × risk score`, between 20% and 80%, and capped by horizon:
+   0% under 3 years, 30% for 3–5, 60% for 5–10 and 80% for 10+. The rest
+   is split 60/40 between government securities and an MMF. Below about KES
+   100k it all goes to the MMF, because of T-bill minimums.
+4. **Put each month's money into the most underweight parts.** You rebalance
+   by buying, never by selling, which saves about 2% in fees each way.
+
+The questionnaire score measures how much risk you're *willing* to take.
+Your horizon, emergency fund and debt measure how much you *can* take, and
+they act as hard limits on top of the score.
+
+### Fees and tax (`nse_agent/fees.py`)
+
+- **Rates:** brokerage 1.5% (set `BROKERAGE_PCT` to your broker's rate),
+  VAT at 16% of brokerage, NSE levy 0.12%, CMA 0.08%, CDSC 0.08%, ICF
+  0.01%, and stamp duty of KES 2 per KES 10,000. A KES 10,000 trade costs
+  about KES 205 (2.05%) each way.
+- **Dividends:** 5% withholding tax for resident individuals.
+- **Keep them current:** rates were checked in September 2026 against
+  nsecalc.co.ke and PwC Tax Summaries. Update them when they change.
+
+### Alerts (`nse_agent/alerts.py`)
+
+The same event is never raised twice. Weekly checks repeat at most once a week.
+
+- **Price:** your price rules, and moves of ±5% or more on stocks you hold
+  or watch.
+- **Records:** 52-week highs and lows, once there's enough history.
+- **Dividends:** book closures within 14 days, with your expected dividend
+  after tax.
+- **Diversification:** holding too few companies, or one company above 20%
+  or one sector above 40%.
+- **Plan:** your mix drifting more than 5 points from target, and the
+  emergency fund below target.
+- **News:** high-relevance news on your stocks.
+- **Data:** stale price data.
 
 ## Scheduling
 
@@ -150,20 +235,18 @@ them from annual-report PDFs is planned for Phase 3.
 pytest -q
 ```
 
-There are 37 tests. The database tests use an embedded throwaway Postgres
+There are 68 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
 
 ## What's next
 
-- **Phase 2:** investor profile questionnaire, allocation rules, a portfolio
-  tracker on `transactions`, and alerts for price moves, book closures and
-  concentration.
+- **Phase 2 (done):** profile, plan, portfolio tracker and alerts.
 - **Phase 3:** an LLM agent with tools over the views, per-article impact
   summaries, `pgvector` search over news and annual reports (the
   docker-compose image already includes it), and PDF extraction of
   financials.
 - **Phase 4:** a web or WhatsApp front end.
 
-For personal and educational use. This is not investment advice.
+For personal and educational use. This is not licensed investment advice.

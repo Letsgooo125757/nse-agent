@@ -1,0 +1,20 @@
+{
+  "name": "James",
+  "monthly_income": 60000,
+  "monthly_expenses": 40000,
+  "monthly_investable": 10000,
+  "emergency_savings": 50000,
+  "high_interest_debt": 0,
+  "emergency_months_target": 6,
+  "goals": "Build long-term wealth and dividend income",
+  "answers": {
+    "_help": "Use the option numbers shown by `nse-agent profile create` (1 = first option)",
+    "horizon": 5,
+    "drop_reaction": 3,
+    "goal": 3,
+    "income_stability": 2,
+    "experience": 1,
+    "share_of_savings": 3,
+    "outcome_range": 3
+  }
+}
