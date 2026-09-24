@@ -26,11 +26,14 @@ class Settings:
     # A price snapshot older than this (in calendar days) is flagged as stale.
     stale_after_days: int
     feeds_path: Path
+    pgdata_dir: Path
 
 
 def get_settings() -> Settings:
     return Settings(
-        database_url=os.getenv("DATABASE_URL", "postgresql://nse:nse@localhost:5432/nse"),
+        # "embedded" = a private Postgres stored in PGDATA_DIR, started on demand
+        # (no Docker needed). Or a normal URL, e.g. postgresql://nse:nse@localhost:5432/nse
+        database_url=os.getenv("DATABASE_URL", "embedded"),
         http_timeout=float(os.getenv("HTTP_TIMEOUT", "30")),
         user_agent=os.getenv(
             "HTTP_USER_AGENT",
@@ -39,4 +42,5 @@ def get_settings() -> Settings:
         afx_base_url=os.getenv("AFX_BASE_URL", "https://afx.kwayisi.org/nse/"),
         stale_after_days=int(os.getenv("STALE_AFTER_DAYS", "5")),
         feeds_path=Path(os.getenv("FEEDS_PATH", str(DATA_DIR / "feeds.json"))),
+        pgdata_dir=Path(os.getenv("PGDATA_DIR", str(PACKAGE_DIR.parent / ".pgdata"))),
     )

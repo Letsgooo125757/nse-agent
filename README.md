@@ -37,10 +37,9 @@ A personal research assistant for investing on the Nairobi Securities Exchange.
 
 ## Quick start
 
-Requirements: Python 3.10+, and Docker (or any PostgreSQL 15+).
+Requirements: Python 3.10+. Docker is optional.
 
 ```bash
-docker compose up -d                 # Postgres on localhost:5432 (user/pass/db: nse)
 python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 cp .env.example .env                 # then put your email in HTTP_USER_AGENT
@@ -51,6 +50,16 @@ nse-agent ingest-prices --history    # today's snapshot + ~10 days' history per 
 nse-agent ingest-news
 nse-agent status                     # row counts + last run of every job
 ```
+
+**Where the data lives:**
+
+- **Default (`DATABASE_URL=embedded`):** a private PostgreSQL stored in
+  `.pgdata/` inside the project. It starts automatically for each command
+  and needs no Docker. `.pgdata/` is git-ignored. Back it up by copying the
+  folder while no command is running.
+- **Docker:** run `docker compose up -d` and set
+  `DATABASE_URL=postgresql://nse:nse@localhost:5432/nse` in `.env`. You'll
+  need this for Phase 3's `pgvector` search.
 
 ## Commands
 
@@ -235,7 +244,7 @@ them from annual-report PDFs is planned for Phase 3.
 pytest -q
 ```
 
-There are 68 tests. The database tests use an embedded throwaway Postgres
+There are 70 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.

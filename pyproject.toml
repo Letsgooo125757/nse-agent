@@ -13,10 +13,11 @@ dependencies = [
     "beautifulsoup4>=4.12",
     "feedparser>=6.0",
     "python-dotenv>=1.0",
+    "pgserver>=0.1.4",   # embedded Postgres for DATABASE_URL=embedded (no Docker)
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pgserver>=0.1.4"]
+dev = ["pytest>=8"]
 
 [project.scripts]
 nse-agent = "nse_agent.cli:main"

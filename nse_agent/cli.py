@@ -8,6 +8,8 @@ import time
 from datetime import datetime, time as dtime
 from pathlib import Path
 
+import psycopg
+
 from . import commands, loaders
 from .config import NAIROBI_TZ, get_settings
 from .db import apply_schema, connect
@@ -172,6 +174,8 @@ def cmd_daily(args) -> int:
 
 
 def cmd_status(args) -> int:
+    url = get_settings().database_url
+    print(f"database             {'embedded (' + str(get_settings().pgdata_dir) + ')' if url == 'embedded' else url.split('@')[-1]}")
     with connect() as conn:
         counts = conn.execute("""
             SELECT (SELECT count(*) FROM companies)            AS companies,
@@ -241,6 +245,12 @@ def main(argv: list[str] | None = None) -> int:
                         format="%(levelname)s %(name)s: %(message)s")
     try:
         return args.func(args)
+    except psycopg.OperationalError as exc:
+        print(f"error: can't reach the database ({str(exc).splitlines()[0]}).\n"
+              "  - No Docker? Set DATABASE_URL=embedded in your .env file (stores data in .pgdata/).\n"
+              "  - Using Docker? Start Docker Desktop, then run `docker compose up -d`.",
+              file=sys.stderr)
+        return 3
     except (SourceError, csv_files.CsvFormatError, PortfolioError, LookupError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
