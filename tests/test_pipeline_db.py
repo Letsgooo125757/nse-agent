@@ -42,7 +42,7 @@ def test_init_is_idempotent(db):
     assert cli.main(["init-db"]) == 0
     assert cli.main(["init-db"]) == 0
     n_csv = len((FIXTURES.parents[1] / "nse_agent/data/companies.csv").read_text().strip().splitlines()) - 1
-    assert q(db, "SELECT count(*) AS n FROM companies")[0]["n"] == n_csv == 65
+    assert q(db, "SELECT count(*) AS n FROM companies")[0]["n"] == n_csv == 73
 
 
 def test_ingest_prices_and_views(db, offline, capsys):

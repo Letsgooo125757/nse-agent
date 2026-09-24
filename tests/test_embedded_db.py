@@ -13,10 +13,10 @@ def test_embedded_database_persists(tmp_path):
     env = {**os.environ, "DATABASE_URL": "embedded", "PGDATA_DIR": str(tmp_path / "pgdata")}
     r = run(["init-db"], env)
     assert r.returncode == 0, r.stderr
-    assert "65 companies" in r.stdout
+    assert "73 companies" in r.stdout
     r = run(["status"], env)                       # a new process, same data
     assert r.returncode == 0, r.stderr
-    assert "embedded" in r.stdout and "companies            65" in r.stdout
+    assert "embedded" in r.stdout and "companies            73" in r.stdout
 
 
 def test_unreachable_database_gives_friendly_error():

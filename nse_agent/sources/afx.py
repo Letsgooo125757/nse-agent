@@ -10,6 +10,9 @@ distribute to other people, NSE requires a data licence (see README).
 Parsers locate tables by their *header text*, not by CSS classes or position,
 so cosmetic site changes don't silently shift columns. If the expected
 headers disappear, a SourceError is raised instead of loading garbage.
+
+The site omits optional closing tags (</td>, </tr>), which is valid HTML5
+but confuses Python's built-in html.parser, so pages are parsed with lxml.
 """
 from __future__ import annotations
 
@@ -23,6 +26,7 @@ from ..models import IndexValue, PriceBar, PriceBatch
 from .base import SourceError, fetch, norm_header, parse_date, parse_decimal, parse_int
 
 SOURCE = "afx"
+PARSER = "lxml"  # handles omitted end tags; html.parser does not
 
 _SUMMARY_DATE_RE = re.compile(
     r"TRADING SUMMARY FOR\s+(?:[A-Z]+DAY,\s*)?([A-Z]+\s+\d{1,2},\s*\d{4})", re.IGNORECASE
@@ -65,7 +69,7 @@ def _body_rows(table: Tag) -> list[list[str]]:
 def parse_market_page(html: str | bytes, *, fallback_date: date) -> PriceBatch:
     """Parse the all-securities table. `fallback_date` is used only if the page
     carries no trading-session date (a warning is added when that happens)."""
-    soup = BeautifulSoup(html, "html.parser")
+    soup = BeautifulSoup(html, PARSER)
     batch = PriceBatch(source=SOURCE)
     text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
 
@@ -108,7 +112,7 @@ def parse_market_page(html: str | bytes, *, fallback_date: date) -> PriceBatch:
 
 def parse_stock_page(html: str | bytes, ticker: str) -> list[PriceBar]:
     """Parse the 'last N trading days' table on a single-stock page."""
-    soup = BeautifulSoup(html, "html.parser")
+    soup = BeautifulSoup(html, PARSER)
     table, headers = _find_table(soup, {"date", "close"})
     idx = {h: i for i, h in enumerate(headers)}
     bars: list[PriceBar] = []

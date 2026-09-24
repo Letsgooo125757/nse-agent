@@ -44,7 +44,7 @@ python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\ac
 pip install -e ".[dev]"
 cp .env.example .env                 # then put your email in HTTP_USER_AGENT
 
-nse-agent init-db                    # tables, views, 65 securities, sectors, macro series
+nse-agent init-db                    # tables, views, 73 securities, sectors, macro series
 nse-agent check-feeds                # confirm each news feed works from your network
 nse-agent ingest-prices --history    # today's snapshot + ~10 days' history per traded stock
 nse-agent ingest-news
@@ -227,7 +227,7 @@ them from annual-report PDFs is planned for Phase 3.
 
 ## Before you rely on the reference data
 
-`nse_agent/data/companies.csv` lists 65 securities, but some fields need checking:
+`nse_agent/data/companies.csv` lists 73 securities, but some fields need checking:
 
 - Sector assignments come from the NSE's sector classification as best I
   know it. Verify them against the current NSE listings page.
@@ -244,7 +244,7 @@ them from annual-report PDFs is planned for Phase 3.
 pytest -q
 ```
 
-There are 70 tests. The database tests use an embedded throwaway Postgres
+There are 72 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.

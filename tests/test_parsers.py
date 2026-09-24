@@ -148,3 +148,25 @@ def test_price_warnings():
     fri_eve = fri_noon.replace(hour=17)
     assert price_warnings(fri_eve.date(), fri_eve, 5) == []
     assert "Stale" in price_warnings(date(2024, 11, 20), fri_eve, 5)[0]
+
+
+def test_afx_market_page_with_omitted_end_tags():
+    """The live site leaves out </td> and </tr> (valid HTML5)."""
+    batch = afx.parse_market_page((FIXTURES / "afx_market_unclosed.html").read_text(),
+                                  fallback_date=date(2026, 9, 24))
+    bars = {b.ticker: b for b in batch.bars}
+    assert len(bars) == 8
+    assert (bars["SCOM"].close, bars["SCOM"].volume, bars["SCOM"].prev_close) == \
+        (Decimal("36.35"), 4843210, Decimal("36.20"))
+    assert bars["ALP"].volume == 0 and bars["ALP"].close == Decimal("1.02")
+    assert bars["SMWF"].close == Decimal("965.00")
+    assert batch.warnings  # no trading-summary date in this fixture -> fallback used
+
+
+def test_new_listings_are_known():
+    import csv
+    from nse_agent.config import DATA_DIR
+    rows = {r["ticker"]: r for r in csv.DictReader((DATA_DIR / "companies.csv").open())}
+    for t in ("ALP", "AMAC", "FMLY", "HFCB", "KPC", "SKL", "SMWF", "TRFC"):
+        assert rows[t]["is_active"] == "true"
+    assert rows["HFCK"]["is_active"] == "false"

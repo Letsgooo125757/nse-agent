@@ -1,5 +1,7 @@
 ticker,name,sector_code,market_segment,security_type,is_active,aliases
 ABSA,Absa Bank Kenya Plc,BANKING,,equity,true,Absa Bank Kenya|Absa Kenya|Absa Bank
+ALP,ALP Real Estate Investment Trust,REIT,REIT,reit,true,ALP REIT
+AMAC,Africa Mega Agricorp Plc,AGRICULTURAL,,equity,true,Africa Mega Agricorp
 ARM,ARM Cement Limited,CONSTRUCTION,,equity,false,ARM Cement|Athi River Mining
 BAMB,Bamburi Cement Limited,CONSTRUCTION,,equity,true,Bamburi Cement|Bamburi
 BAT,British American Tobacco Kenya Plc,MANUFACTURING,,equity,true,British American Tobacco Kenya|BAT Kenya
@@ -19,17 +21,20 @@ EABL,East African Breweries Plc,MANUFACTURING,,equity,true,East African Brewerie
 EGAD,Eaagads Limited,AGRICULTURAL,,equity,true,Eaagads
 EQTY,Equity Group Holdings Plc,BANKING,,equity,true,Equity Group|Equity Bank
 EVRD,Eveready East Africa Plc,MANUFACTURING,,equity,true,Eveready East Africa|Eveready
+FMLY,Family Bank Limited,BANKING,,equity,true,Family Bank
 FTGH,Flame Tree Group Holdings Limited,MANUFACTURING,,equity,true,Flame Tree Group|Flame Tree
 GLD,Absa NewGold ETF,ETF,ETF,etf,true,NewGold ETF|Absa NewGold
 HAFR,Home Afrika Limited,INVESTMENT,,equity,true,Home Afrika
 HBE,Homeboyz Entertainment Plc,COMMERCIAL,,equity,true,Homeboyz Entertainment|Homeboyz
-HFCK,HF Group Plc,BANKING,,equity,true,HF Group|HFC Kenya|Housing Finance
+HFCB,HFCB Group Plc,BANKING,,equity,true,HFCB Group|HF Group|HFC Kenya|Housing Finance
+HFCK,HF Group Plc (old ticker - now HFCB),BANKING,,equity,false,
 IMH,I&M Group Plc,BANKING,,equity,true,I&M Group|I&M Bank|I&M Holdings
 JUB,Jubilee Holdings Limited,INSURANCE,,equity,true,Jubilee Holdings|Jubilee Insurance
 KAPC,Kapchorua Tea Kenya Plc,AGRICULTURAL,,equity,true,Kapchorua Tea|Kapchorua
 KCB,KCB Group Plc,BANKING,,equity,true,KCB Group|KCB Bank|KCB
 KEGN,KenGen Plc,ENERGY,,equity,true,KenGen|Kenya Electricity Generating Company
 KNRE,Kenya Reinsurance Corporation Limited,INSURANCE,,equity,true,Kenya Re|Kenya Reinsurance
+KPC,Kenya Pipeline Company Plc,ENERGY,,equity,true,Kenya Pipeline Company|Kenya Pipeline|KPC
 KPLC,Kenya Power & Lighting Company Plc,ENERGY,,equity,true,Kenya Power|KPLC
 KPLC-P4,Kenya Power 4% Preference Shares,ENERGY,PREF,preference,true,
 KPLC-P7,Kenya Power 7% Preference Shares,ENERGY,PREF,preference,true,
@@ -54,11 +59,14 @@ SCAN,WPP Scangroup Plc,COMMERCIAL,,equity,true,WPP Scangroup|Scangroup
 SCBK,Standard Chartered Bank Kenya Limited,BANKING,,equity,true,Standard Chartered|StanChart
 SCOM,Safaricom Plc,TELECOM,,equity,true,Safaricom|M-Pesa|M-PESA|Mpesa
 SGL,Standard Group Plc,COMMERCIAL,,equity,true,Standard Group|Standard Media Group
-SLAM,Sanlam Kenya Plc,INSURANCE,,equity,true,Sanlam Kenya|Sanlam
+SKL,Shri Krishana Overseas Ltd,MANUFACTURING,,equity,true,Shri Krishana Overseas|Shri Krishana
+SLAM,Sanlam Allianz Holdings Plc,INSURANCE,,equity,true,Sanlam Allianz|Sanlam Kenya|Sanlam
 SMER,Sameer Africa Plc,COMMERCIAL,,equity,true,Sameer Africa
+SMWF,Satrix MSCI World Feeder ETF,ETF,ETF,etf,true,Satrix MSCI World
 TCL,TransCentury Plc,INVESTMENT,,equity,true,TransCentury|Trans Century
 TOTL,TotalEnergies Marketing Kenya Plc,ENERGY,,equity,true,TotalEnergies Marketing Kenya|TotalEnergies Kenya|Total Kenya
 TPSE,TPS Eastern Africa (Serena) Plc,COMMERCIAL,,equity,true,TPS Eastern Africa|Serena Hotels|TPS Serena
+TRFC,TRIFIC Green USD I-REIT,REIT,REIT,reit,true,TRIFIC Green
 UCHM,Uchumi Supermarkets Plc,COMMERCIAL,,equity,true,Uchumi Supermarkets|Uchumi
 UMME,Umeme Limited,ENERGY,,equity,true,Umeme
 UNGA,Unga Group Plc,MANUFACTURING,,equity,true,Unga Group|Unga
