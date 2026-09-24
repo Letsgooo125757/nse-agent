@@ -1,0 +1,34 @@
+[
+  {
+    "source_code": "capitalfm_business",
+    "name": "Capital FM Business",
+    "feed_url": "https://capitalfm.africa/business/feed/",
+    "scope": "local",
+    "enabled": true,
+    "note": "Verified RSS 2.0 with full article content."
+  },
+  {
+    "source_code": "gnews_nse",
+    "name": "Google News: Nairobi Securities Exchange",
+    "feed_url": "https://news.google.com/rss/search?q=%22Nairobi+Securities+Exchange%22+OR+NSE+Kenya+shares&hl=en-KE&gl=KE&ceid=KE:en",
+    "scope": "local",
+    "enabled": true,
+    "note": "Headlines + links only (no body). Run `nse-agent check-feeds` to confirm it works from your network."
+  },
+  {
+    "source_code": "gnews_kenya_economy",
+    "name": "Google News: Kenya economy (CBK, shilling, inflation)",
+    "feed_url": "https://news.google.com/rss/search?q=%22Central+Bank+of+Kenya%22+OR+%22Kenya+shilling%22+OR+%22Kenya+inflation%22&hl=en-KE&gl=KE&ceid=KE:en",
+    "scope": "local",
+    "enabled": true,
+    "note": "Macro drivers for the whole market."
+  },
+  {
+    "source_code": "gnews_global_macro",
+    "name": "Google News: global macro (Fed, oil, emerging markets)",
+    "feed_url": "https://news.google.com/rss/search?q=%22Federal+Reserve%22+OR+%22oil+prices%22+OR+%22emerging+markets%22+OR+%22frontier+markets%22&hl=en&gl=US&ceid=US:en",
+    "scope": "global",
+    "enabled": true,
+    "note": "Global drivers: rates, oil, foreign-investor flows."
+  }
+]

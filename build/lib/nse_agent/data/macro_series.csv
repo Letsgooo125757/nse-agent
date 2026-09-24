@@ -1,0 +1,9 @@
+series_code,name,unit,frequency,source
+CBK_CBR,CBK Central Bank Rate,percent,event,Central Bank of Kenya
+TBILL_91,91-day Treasury Bill average yield,percent,weekly,Central Bank of Kenya
+TBILL_182,182-day Treasury Bill average yield,percent,weekly,Central Bank of Kenya
+TBILL_364,364-day Treasury Bill average yield,percent,weekly,Central Bank of Kenya
+USDKES,USD/KES mean exchange rate,KES,daily,Central Bank of Kenya
+CPI_INFLATION,Kenya CPI inflation (y/y),percent,monthly,Kenya National Bureau of Statistics
+BRENT,Brent crude oil price,USD/bbl,daily,Market data
+US_FED_FUNDS,US Federal Funds target rate (upper bound),percent,event,Federal Reserve
