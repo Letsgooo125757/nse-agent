@@ -5,7 +5,8 @@ A personal research assistant for investing on the Nairobi Securities Exchange.
 - **Phase 1, data:** prices, news, fundamentals and macro data in PostgreSQL.
 - **Phase 2, you:** a risk profile, a rules-based plan for each month's
   money, a portfolio tracker with real NSE fees, and alerts.
-- **Phase 3, next:** an LLM agent that explains all of this in plain language.
+- **Phase 3, the assistant:** `nse-agent chat`, which answers questions using
+  the data above through read-only tools, with dates on every figure.
 
 ```
             ┌───────────────┐   ┌──────────────┐   ┌────────────────┐
@@ -59,7 +60,7 @@ nse-agent status                     # row counts + last run of every job
   folder while no command is running.
 - **Docker:** run `docker compose up -d` and set
   `DATABASE_URL=postgresql://nse:nse@localhost:5432/nse` in `.env`. You'll
-  need this for Phase 3's `pgvector` search.
+  need this later for `pgvector` semantic search.
 
 ## Commands
 
@@ -160,6 +161,49 @@ The same event is never raised twice. Weekly checks repeat at most once a week.
 - **News:** high-relevance news on your stocks.
 - **Data:** stale price data.
 
+## Phase 3: the chat assistant
+
+```bash
+nse-agent chat                                   # conversation; /reset /cost /exit
+nse-agent ask "How is my portfolio doing?"       # one question
+nse-agent ask "Compare KCB and Equity on dividends and valuation"
+nse-agent ask "Should I put KES 20,000 into Safaricom this month?"
+```
+
+**Setup:** buy API credits at console.anthropic.com, create a key, and add
+`ANTHROPIC_API_KEY=sk-ant-...` to `.env`. API credits are separate from a
+Claude Pro subscription. `.env` is git-ignored, so never commit the key.
+
+**How it works (`nse_agent/agent/`):** Claude decides which **tools** to call.
+They're 14 read-only functions over your database: quotes, price history,
+valuations, a stock screener, news search, your portfolio, your plan, a
+purchase check, upcoming dividends, macro data, alerts, data freshness and
+trade costs. It then writes the answer from the results.
+
+**Guardrails in `prompt.py`:**
+- Every number must come from a tool result, with its date.
+- Missing data is stated plainly, along with the command that fills it.
+- Personal questions start from your rules-based plan.
+- "Should I buy X?" questions get pros and cons plus the output of
+  `check_purchase`, never a definitive buy or sell call, price target or
+  timing call.
+- News text is treated as untrusted data, which guards against prompt
+  injection hidden in articles.
+
+**Safety:** the tools can't trade, change your profile or record
+transactions.
+
+**Cost:** the system prompt and tool definitions (about 2,300 tokens) are
+prompt-cached, so repeat calls read them at a tenth of the price. On the
+default `claude-sonnet-5-5` a typical question costs about $0.01–0.03. Type
+`/cost` in `chat` to see your running total. Set `NSE_AGENT_MODEL` in
+`.env` to use a different model: `claude-haiku-4-5` is cheapest and
+`claude-opus-5-5` is strongest.
+
+**Answer quality depends on your data.** Run `daily` every weekday, and
+import annual results (`import-financials`) for the companies you care about.
+Without them the assistant has no P/E or dividend-yield figures and will say so.
+
 ## Scheduling
 
 NSE equities trade 09:30–15:00 EAT, Monday to Friday. Run `daily` after the close.
@@ -198,7 +242,7 @@ add or remove feeds.
 
 **Fundamentals, dividends and macro data** are imported from CSV in Phase 1.
 Structured Kenyan fundamentals are the hard part of this project. Extracting
-them from annual-report PDFs is planned for Phase 3.
+them from annual-report PDFs is planned for a later phase.
 
 ## Design decisions
 
@@ -244,7 +288,7 @@ them from annual-report PDFs is planned for Phase 3.
 pytest -q
 ```
 
-There are 72 tests. The database tests use an embedded throwaway Postgres
+There are 94 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
@@ -252,7 +296,7 @@ it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
 ## What's next
 
 - **Phase 2 (done):** profile, plan, portfolio tracker and alerts.
-- **Phase 3:** an LLM agent with tools over the views, per-article impact
+- **Phase 3 (done):** chat assistant with tools. Still to come: per-article impact
   summaries, `pgvector` search over news and annual reports (the
   docker-compose image already includes it), and PDF extraction of
   financials.

@@ -11,6 +11,8 @@ from pathlib import Path
 import psycopg
 
 from . import commands, loaders
+from .agent import cli as agent_cli
+from .agent.chat import MissingApiKey
 from .config import NAIROBI_TZ, get_settings
 from .db import apply_schema, connect
 from .sources import afx, csv_files, rss
@@ -234,6 +236,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("retag-news", help="re-run ticker/topic tagging on stored news").set_defaults(func=cmd_retag_news)
     commands.register(sub)
+    agent_cli.register(sub)
     sub.add_parser("daily", help="prices + news + alerts (schedule this after 15:00 EAT)").set_defaults(func=cmd_daily)
     sub.add_parser("status", help="row counts and last run of each job").set_defaults(func=cmd_status)
     return p
@@ -245,6 +248,12 @@ def main(argv: list[str] | None = None) -> int:
                         format="%(levelname)s %(name)s: %(message)s")
     try:
         return args.func(args)
+    except MissingApiKey as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 4
+    except psycopg.errors.UndefinedTable:
+        print("error: the database isn't set up yet. Run `nse-agent init-db` first.", file=sys.stderr)
+        return 3
     except psycopg.OperationalError as exc:
         print(f"error: can't reach the database ({str(exc).splitlines()[0]}).\n"
               "  - No Docker? Set DATABASE_URL=embedded in your .env file (stores data in .pgdata/).\n"
