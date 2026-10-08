@@ -236,7 +236,7 @@ def search_news(ctx: ToolContext, ticker: str | None = None, topic: str | None =
     if ticker:
         t = _tickers(ctx, [ticker])[0]
         sql = """SELECT a.id, a.title, a.source_code, a.published_at, a.url, a.topics,
-                        left(COALESCE(a.summary, a.content, ''), 400) AS summary,
+                        left(COALESCE(a.summary, a.content, ''), 280) AS summary,
                         l.relevance, l.in_title
                  FROM news_ticker_links l JOIN news_articles a ON a.id = l.article_id
                  WHERE COALESCE(a.published_at, a.fetched_at) >= %s AND l.ticker = %s"""
@@ -244,7 +244,7 @@ def search_news(ctx: ToolContext, ticker: str | None = None, topic: str | None =
         order = "l.relevance DESC, a.published_at DESC NULLS LAST"
     else:
         sql = """SELECT a.id, a.title, a.source_code, a.published_at, a.url, a.topics,
-                        left(COALESCE(a.summary, a.content, ''), 400) AS summary
+                        left(COALESCE(a.summary, a.content, ''), 280) AS summary
                  FROM news_articles a WHERE COALESCE(a.published_at, a.fetched_at) >= %s"""
         order = "a.published_at DESC NULLS LAST"
     if topic:

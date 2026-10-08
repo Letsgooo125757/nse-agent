@@ -336,3 +336,49 @@ def test_missing_key(monkeypatch, capsys):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     assert cli.main(["ask", "hello"]) == 4
     assert "console.anthropic.com" in capsys.readouterr().err
+
+
+def test_history_cache_breakpoint_moves_with_conversation(ctx):
+    agent, client = make_agent(ctx, [
+        response([tool_block("t1", "data_status", {})], stop="tool_use"),
+        response([text_block("done")]),
+        response([text_block("again")]),
+    ])
+    agent.ask("first")
+    agent.ask("second")
+
+    def breakpoints(call):
+        n = sum(1 for b in call["system"] if "cache_control" in b)
+        n += sum(1 for t in call["tools"] if "cache_control" in t)
+        for m in call["messages"]:
+            if isinstance(m["content"], list):
+                n += sum(1 for b in m["content"] if isinstance(b, dict) and "cache_control" in b)
+        return n
+
+    for call in client.calls:
+        assert breakpoints(call) == 3                     # system + tools + newest message
+        last = call["messages"][-1]["content"]
+        assert last[-1]["cache_control"] == {"type": "ephemeral"}
+    # the stored history itself is never modified
+    assert agent.messages[0]["content"] == "first"
+    assert "cache_control" not in agent.messages[2]["content"][0]
+
+
+def test_bundled_fundamentals_import(db, capsys):
+    """The researched data files in data/fundamentals import cleanly and give sane ratios."""
+    root = FIXTURES.parents[1] / "data" / "fundamentals"
+    assert cli.main(["import-financials", str(root / "financials_2026-10.csv")]) == 0
+    assert cli.main(["import-dividends", str(root / "dividends_2026-10.csv")]) == 0
+    out = capsys.readouterr().out
+    assert "16 rows written, 0 lines skipped" in out and "13 rows written, 0 lines skipped" in out
+    with connect(db) as conn:
+        conn.execute("INSERT INTO daily_prices(ticker, trade_date, close, source) VALUES "
+                     "('SCOM', '2026-10-07', 36.35, 'test'), ('KPLC', '2026-10-07', 23.45, 'test')")
+        conn.commit()
+        v = {r["ticker"]: r for r in conn.execute("SELECT * FROM v_valuation WHERE ticker IN ('SCOM','KPLC')")}
+        lp = conn.execute("SELECT market_cap FROM v_latest_prices WHERE ticker = 'SCOM'").fetchone()
+    assert v["SCOM"]["fy_period_end"] == date(2026, 3, 31)
+    assert float(v["SCOM"]["pe_ratio"]) == pytest.approx(15.21, abs=0.01)        # 36.35 / 2.39
+    assert float(v["SCOM"]["dividend_yield_pct"]) == pytest.approx(5.50, abs=0.01)
+    assert float(v["KPLC"]["pe_ratio"]) == pytest.approx(1.83, abs=0.01)
+    assert float(lp["market_cap"]) == pytest.approx(36.35 * 40065428000, rel=1e-9)

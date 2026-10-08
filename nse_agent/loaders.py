@@ -189,6 +189,14 @@ def upsert_financials(conn: psycopg.Connection, rows: list[dict], log: RunLog) -
                     ingested_at = now()""",
             good,
         )
+        # Keep companies.shares_outstanding current (drives market cap in v_latest_prices).
+        cur.execute(
+            """UPDATE companies c SET shares_outstanding = f.shares_outstanding, updated_at = now()
+               FROM (SELECT DISTINCT ON (ticker) ticker, shares_outstanding
+                     FROM financial_statements WHERE shares_outstanding IS NOT NULL
+                     ORDER BY ticker, period_end DESC) f
+               WHERE f.ticker = c.ticker
+                 AND c.shares_outstanding IS DISTINCT FROM f.shares_outstanding""")
     log.rows_written += len(good)
 
 

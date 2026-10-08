@@ -1,0 +1,14 @@
+ticker,action_type,amount_per_share,announced_date,book_closure_date,payment_date,financial_year,source_url,notes
+SCOM,interim_dividend,0.85,,,,2026,https://www.nse.co.ke/wp-content/uploads/Safaricom-Plc-%E2%80%93Audited-Results-for-the-Year-Ended-31-March-2026.pdf,Dates not captured.
+SCOM,final_dividend,1.15,2026-05-07,2026-08-04,2026-09-04,2026,https://sarafu.co.ke/safaricom-dividend/,Payment on or about 4 Sep 2026.
+EQTY,final_dividend,5.75,2026-03-18,,2026-06-30,2025,https://mwangocapital.com/event/equity-group-holdings-dividend-payment-ksh-5-75/,Payment date per Mwango Capital calendar; record date not captured.
+KCB,interim_dividend,4.00,,,,2025,https://www.nse.co.ke/wp-content/uploads/KCB-Group-Plc-Audited-Results-of-the-Group-for-the-Year-ended-31-Dec-2025.pdf,2.00 ordinary + 2.00 special interim.
+KCB,final_dividend,3.00,2026-03-16,2026-04-02,2026-05-22,2025,https://kenyanwallstreet.com/kcb-posts-record-68-35-bn-2025-profit,Payment on or about 22 May 2026.
+ABSA,interim_dividend,0.20,,,,2025,https://www.nse.co.ke/wp-content/uploads/ABSA-Bank-Kenya-Plc-Audited-Group-Results-for-the-Year-Ended-31-Dec-2025.pdf,
+ABSA,final_dividend,1.85,,2026-04-30,2026-05-19,2025,https://www.nse.co.ke/wp-content/uploads/ABSA-Bank-Kenya-Plc-Audited-Group-Results-for-the-Year-Ended-31-Dec-2025.pdf,
+COOP,interim_dividend,1.00,,,2025-12-04,2025,https://annualreport.cma.or.ke/media/BANKING/Co-operative%20Bank%20of%20Kenya/documents/2025.pdf,
+COOP,final_dividend,1.50,2026-03-19,2026-04-30,2026-06-05,2025,https://annualreport.cma.or.ke/media/BANKING/Co-operative%20Bank%20of%20Kenya/documents/2025.pdf,
+KNRE,final_dividend,0.15,2026-03-28,,2026-07-31,2025,https://www.marketscreener.com/news/kenya-reinsurance-corporation-limited-announces-annual-dividend-payable-on-july-31-2026-ce7f59dcd881f32d,Record date not captured.
+KEGN,final_dividend,0.75,2026-09-07,2026-10-29,,2026,https://business.co.ke/kengen-cuts-dividend-by-16-7-to-ksh-0-75-as-profit-edges-lower/,"Register closes on the AGM date (29 Oct 2026); payment expected about 21-27 Jan 2027, subject to approval."
+KPLC,interim_dividend,0.30,,,,2026,https://mwangocapital.com/wp-content/uploads/2026/09/Kenya-Power-FY2026-Financials.pdf,Paid during FY2026; dates not captured.
+KPLC,final_dividend,1.20,,2026-11-27,,2026,https://mwangocapital.com/wp-content/uploads/2026/09/Kenya-Power-FY2026-Financials.pdf,"Payment before 31 Dec 2026, subject to AGM approval."

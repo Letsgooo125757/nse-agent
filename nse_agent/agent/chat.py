@@ -124,6 +124,32 @@ class Agent:
         specs[-1] = {**specs[-1], "cache_control": {"type": "ephemeral"}}
         return specs
 
+    @staticmethod
+    def _with_history_cache(messages: list[dict]) -> list[dict]:
+        """Mark the newest message as a cache breakpoint.
+
+        Each lookup round re-sends the whole conversation. With a breakpoint on
+        the latest message, the next round reads everything up to it from the
+        cache at 10% of the input price instead of paying full price again.
+        Only the copy sent to the API is marked, so there is never more than
+        one moving breakpoint (the API allows 4 in total).
+        """
+        if not messages:
+            return messages
+        last = dict(messages[-1])
+        content = last["content"]
+        if isinstance(content, str):
+            content = [{"type": "text", "text": content}]
+        else:
+            content = list(content)
+        tail = content[-1]
+        tail = dict(tail) if isinstance(tail, dict) else tail.model_dump(exclude_none=True) \
+            if hasattr(tail, "model_dump") else dict(vars(tail))
+        tail["cache_control"] = {"type": "ephemeral"}
+        content[-1] = tail
+        last["content"] = content
+        return [*messages[:-1], last]
+
     def reset(self) -> None:
         self.messages.clear()
 
@@ -143,7 +169,7 @@ class Agent:
         for _ in range(self.max_tool_rounds + 1):
             resp = self.client.messages.create(
                 model=self.model, max_tokens=self.max_tokens, system=self._system(today),
-                tools=self._tools(), messages=self.messages)
+                tools=self._tools(), messages=self._with_history_cache(self.messages))
             self.usage.add(getattr(resp, "usage", None))
             # Pass the content back unchanged (it may include thinking blocks).
             self.messages.append({"role": "assistant", "content": resp.content})

@@ -193,9 +193,10 @@ trade costs. It then writes the answer from the results.
 **Safety:** the tools can't trade, change your profile or record
 transactions.
 
-**Cost:** the system prompt and tool definitions (about 2,300 tokens) are
-prompt-cached, so repeat calls read them at a tenth of the price. On the
-default `claude-sonnet-5-5` a typical question costs about $0.01–0.03. Type
+**Cost:** the system prompt, the tool definitions and the conversation so far
+are prompt-cached, so each lookup round re-reads them at a tenth of the
+price. On the default `claude-sonnet-5-5` a typical question costs about
+$0.02–0.05. Type
 `/cost` in `chat` to see your running total. Set `NSE_AGENT_MODEL` in
 `.env` to use a different model: `claude-haiku-4-5` is cheapest and
 `claude-opus-5-5` is strongest.
@@ -203,6 +204,32 @@ default `claude-sonnet-5-5` a typical question costs about $0.01–0.03. Type
 **Answer quality depends on your data.** Run `daily` every weekday, and
 import annual results (`import-financials`) for the companies you care about.
 Without them the assistant has no P/E or dividend-yield figures and will say so.
+
+## Researched fundamentals (`data/fundamentals/`)
+
+These files hold the latest two full years of results for SCOM, EQTY, KCB,
+ABSA, COOP, KNRE, KEGN and KPLC, as researched in October 2026. Load them with:
+
+```bash
+nse-agent import-financials data/fundamentals/financials_2026-10.csv
+nse-agent import-dividends data/fundamentals/dividends_2026-10.csv
+```
+
+- **Sources:** every row has a `source_url`, preferring the audited results
+  on nse.co.ke, and a `notes` column that says what each figure means.
+- **What the figures mean:** `net_income` is profit attributable to
+  shareholders where the filing gives it, otherwise profit after tax.
+  Amounts are full KES.
+- **Checks:** each EPS was checked against profit ÷ shares (within 1%; KCB
+  within 3% because its profit figure includes minority interests).
+- **Market cap:** importing also sets each company's `shares_outstanding`.
+- **Gaps:** a few fields are blank where no reliable source was found, such
+  as KenGen's FY2026 balance sheet and some dividend record dates. Fill them
+  in as companies publish.
+- **When to update:** banks report in March for December year-ends,
+  Safaricom in May (March year-end), and KenGen and KPLC in Sept–Oct (June
+  year-end). Add rows to a new file and import it; re-importing the same
+  period updates it.
 
 ## Scheduling
 
@@ -288,7 +315,7 @@ them from annual-report PDFs is planned for a later phase.
 pytest -q
 ```
 
-There are 94 tests. The database tests use an embedded throwaway Postgres
+There are 96 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
