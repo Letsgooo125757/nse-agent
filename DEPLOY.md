@@ -4,7 +4,7 @@
 |---|---|---|
 | Web app | **Render** (Docker web service) | Sleeps after 15 min idle, so the first visit after a break takes about a minute. 750 instance-hours a month, enough for one app running all month. |
 | Database | **Neon** (serverless Postgres) | 1 GB storage per project (years of NSE data fit easily). Compute suspends after 5 min idle and wakes in about a second. No card needed. |
-| Daily update | **GitHub Actions** | Runs `nse-agent daily` on weekdays at 15:30 Nairobi time. |
+| Daily update | **GitHub Actions** + your computer | GitHub fetches news and runs alerts every weekday at 15:30 Nairobi time. Prices come from your computer, because the free price site blocks GitHub's servers. |
 | Assistant | Anthropic API | Pay-as-you-go from your credits. Capped by `CHAT_DAILY_LIMIT`. |
 
 All three are tied to your GitHub login. Pick **Frankfurt** for both Render and Neon; it's the closest region to Nairobi and keeps them next to each other.
@@ -51,9 +51,22 @@ Every `git push` to `main` redeploys automatically.
 
 1. In your GitHub repo, go to **Settings > Secrets and variables > Actions > New repository secret**. Name it `DATABASE_URL` and paste the Neon string.
 2. Open **Actions > daily-update > Run workflow** to test it now. A green tick means prices and news landed in Neon.
-3. If you set up Windows Task Scheduler earlier, you can turn it off. If you leave it running, it's harmless, because every write is idempotent.
+3. If the "Prices" step shows a yellow warning, that's expected: the price site blocks GitHub's servers. Step 5 covers prices.
 
 GitHub pauses scheduled workflows in public repos after 60 days without commits. If that happens, Actions shows a banner; click **Enable workflow**.
+
+## 5. Fetch prices from your computer
+
+Your `.env` points at Neon, so prices fetched on your computer land in the same database the website reads.
+
+1. Open **Task Scheduler** and click **Create Basic Task**. Name it `NSE prices` and set it to **Daily** at **15:40**.
+2. Choose **Start a program**:
+   - **Program:** `C:\Users\Gitau\nse-agent\.venv\Scripts\nse-agent.exe`
+   - **Arguments:** `ingest-prices`
+   - **Start in:** `C:\Users\Gitau\nse-agent`
+3. In the task's **Settings** tab, tick **Run task as soon as possible after a scheduled start is missed**, so a laptop that was off catches up when you open it.
+
+The task runs every day, but on weekends the site shows Friday's prices again. That's harmless: the same rows are just updated.
 
 ## Security checklist
 

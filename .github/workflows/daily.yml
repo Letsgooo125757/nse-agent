@@ -1,6 +1,10 @@
-# Weekday data update for the hosted database: prices, news and alerts.
+# Weekday update for the hosted database: news, prices (best effort) and alerts.
 # Runs at 12:30 UTC = 15:30 Nairobi, after the NSE closes.
 # Needs the repository secret DATABASE_URL (Settings > Secrets and variables > Actions).
+#
+# The free price site (afx.kwayisi.org) blocks GitHub's data-centre network, so
+# prices usually come from your own computer instead (see DEPLOY.md, step 5).
+# This job still tries, and shows a warning rather than failing if it can't.
 name: daily-update
 
 on:
@@ -19,6 +23,7 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       HTTP_USER_AGENT: ${{ vars.HTTP_USER_AGENT || 'nse-agent/0.1 (personal research project)' }}
+      HTTP_TIMEOUT: "15"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,5 +34,13 @@ jobs:
       - name: Check the secret is set
         run: test -n "$DATABASE_URL" || (echo "Add the DATABASE_URL repository secret first." && exit 1)
       - run: nse-agent init-db        # applies any schema upgrades; safe to repeat
-      - run: nse-agent daily
+      - name: Prices (best effort)
+        continue-on-error: true
+        run: |
+          nse-agent ingest-prices || {
+            echo "::warning title=Prices not fetched::The price site can't be reached from GitHub. Your computer's scheduled 'nse-agent ingest-prices' covers this (DEPLOY.md step 5)."
+            exit 1
+          }
+      - run: nse-agent ingest-news
+      - run: nse-agent alerts run
       - run: nse-agent status
