@@ -285,6 +285,11 @@ def test_db_copy(seeded):
     with pytest.raises(RuntimeError, match="--replace"):
         copy_database(seeded, target, log=lambda *_: None)
     copy_database(seeded, target, replace=True, log=lambda *_: None)
+    with pytest.raises(RuntimeError, match="same database"):
+        copy_database(target, target, replace=True, log=lambda *_: None)
+    with psycopg.connect(target, row_factory=dict_row) as c:     # json columns survive the trip
+        prof = c.execute("SELECT questionnaire FROM investor_profiles").fetchone()
+        assert prof["questionnaire"]["horizon"] == 4
     # sequences continue after copied ids
     with psycopg.connect(target) as c:
         new_id = c.execute("INSERT INTO investor_profiles(display_name) VALUES ('x') RETURNING id").fetchone()[0]
