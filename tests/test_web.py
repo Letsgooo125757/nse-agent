@@ -278,6 +278,8 @@ def test_db_copy(seeded):
         c.execute("DROP DATABASE IF EXISTS copy_target")
         c.execute("CREATE DATABASE copy_target")
     target = re.sub(r"/[^/?]+(\?|$)", r"/copy_target\1", seeded, count=1)
+    with psycopg.connect(seeded) as c:            # simulate a database created before Phase 4
+        c.execute("DROP TABLE app_usage")
     counts = copy_database(seeded, target, log=lambda *_: None)
     assert counts["transactions"] == 1 and counts["companies"] == 73 and counts["daily_prices"] == 3
     with pytest.raises(RuntimeError, match="--replace"):

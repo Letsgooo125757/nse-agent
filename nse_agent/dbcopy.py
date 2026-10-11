@@ -33,6 +33,8 @@ def copy_database(source_url: str, target_url: str, *, replace: bool = False,
                   log=print) -> dict[str, int]:
     counts: dict[str, int] = {}
     with psycopg.connect(resolve_url(source_url)) as src, psycopg.connect(target_url) as dst:
+        apply_schema(src)   # bring an older local database up to date first (idempotent)
+        src.commit()
         apply_schema(dst)
         busy = dst.execute("""SELECT (SELECT count(*) FROM investor_profiles)
                                    + (SELECT count(*) FROM daily_prices)""").fetchone()[0]
@@ -41,6 +43,9 @@ def copy_database(source_url: str, target_url: str, *, replace: bool = False,
         dst.execute("TRUNCATE " + ", ".join(TABLES) + " RESTART IDENTITY CASCADE")
         for table in TABLES:
             cols = [c for c in _columns(src, table) if c in set(_columns(dst, table))]
+            if not cols:
+                counts[table] = 0
+                continue
             col_sql = ", ".join(f'"{c}"' for c in cols)
             n = 0
             with src.cursor().copy(f'COPY {table} ({col_sql}) TO STDOUT') as out, \
