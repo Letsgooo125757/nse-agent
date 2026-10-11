@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}{{ co.ticker }} | NSE desk{% endblock %}
+{% block head %}<script src="/static/vendor/chart.umd.min.js" defer></script>{% endblock %}
+{% block content %}
+<div class="co-head">
+  <div>
+    <h1 class="co-ticker">{{ co.ticker }}</h1>
+    <p class="co-name">{{ co.name }}{% if co.sector_name %}, {{ co.sector_name }}{% endif %}{% if not co.is_active %} (suspended or delisted){% endif %}</p>
+  </div>
+  {% if q %}
+  <div>
+    <div class="co-price">KES {{ q.close|price }}</div>
+    <div class="co-change {{ q.change_pct|dir }}">{{ q.change|signed(2) }} ({{ q.change_pct|pct(2, true) }}) on {{ q.trade_date|d }}</div>
+  </div>
+  {% endif %}
+  {% if has_profile %}
+  <form method="post" action="/watchlist">
+    <input type="hidden" name="csrf_token" value="{{ csrf(request) }}">
+    <input type="hidden" name="ticker" value="{{ co.ticker }}">
+    <input type="hidden" name="action" value="{{ 'remove' if watching else 'add' }}">
+    <button class="quiet" type="submit">{{ "Remove from watchlist" if watching else "Add to watchlist" }}</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="grid grid-2b">
+  <section class="panel" aria-labelledby="chart-h">
+    <div class="panel-head">
+      <h2 id="chart-h">Price</h2>
+      {% if hist_n > 1 %}
+      <div class="range-buttons" role="group" aria-label="Time range">
+        {% for d, l in [(30, "1M"), (91, "3M"), (182, "6M"), (365, "1Y"), (0, "All")] %}
+        <button class="quiet" type="button" data-range="{{ d }}" aria-pressed="{{ 'true' if d == 0 else 'false' }}">{{ l }}</button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% if hist_n > 1 %}
+    <div class="chart-box" id="price-chart"><canvas role="img" aria-label="{{ co.ticker }} closing price history, {{ hist_n }} trading days"></canvas></div>
+    <script type="application/json" id="price-data">{{ chart|safe }}</script>
+    <p class="small muted mt-12">{{ hist_n }} trading days stored. History grows each day the daily update runs.</p>
+    {% else %}
+    <p class="empty">Not enough price history yet. It builds up as <code>nse-agent daily</code> runs each weekday.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel" aria-labelledby="facts-h">
+    <h2 id="facts-h">Key figures</h2>
+    <dl class="facts">
+      <div><dt>52-week range</dt><dd>{% if q and q.low_52w %}{{ q.low_52w|price }} to {{ q.high_52w|price }}{% else %}–{% endif %}</dd></div>
+      <div><dt>Average daily volume</dt><dd>{{ q.avg_volume_52w|money if q else "–" }}</dd></div>
+      <div><dt>P/E</dt><dd>{{ val.pe_ratio|price if val and val.pe_ratio else "–" }}</dd></div>
+      <div><dt>Dividend yield</dt><dd>{{ val.dividend_yield_pct|pct if val and val.dividend_yield_pct else "–" }}</dd></div>
+      <div><dt>Return on equity</dt><dd>{{ val.roe_pct|pct if val and val.roe_pct else "–" }}</dd></div>
+      <div><dt>Market value</dt><dd>{% if q and q.market_cap %}KES {{ (q.market_cap / 1000000000)|money(1) }}bn{% else %}–{% endif %}</dd></div>
+    </dl>
+    {% if position %}
+    <h3 class="mt-20">Your position</h3>
+    <p>{{ position.shares|qty }} shares at an average KES {{ position.avg_cost|price }}, worth KES {{ position.market_value|money }}
+      (<span class="{{ position.unrealised_pnl|dir }}">{{ position.unrealised_pnl|signed }}</span>), {{ position.weight_pct|pct }} of your shares.</p>
+    {% endif %}
+  </section>
+</div>
+
+<div class="grid grid-2 mt-20">
+  <section class="panel" aria-labelledby="fin-h">
+    <h2 id="fin-h">Results</h2>
+    {% if fins %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Period</th><th class="num">Revenue (bn)</th><th class="num">Profit (bn)</th><th class="num">EPS</th><th class="num">Dividend</th></tr></thead>
+        <tbody>
+          {% for f in fins %}
+          <tr>
+            <td>{{ f.period_type }} {{ f.period_end|d }}</td>
+            <td class="num">{{ (f.revenue / 1000000000)|money(1) if f.revenue else "–" }}</td>
+            <td class="num">{{ (f.net_income / 1000000000)|money(1) if f.net_income else "–" }}</td>
+            <td class="num">{{ f.eps|price if f.eps else "–" }}</td>
+            <td class="num">{{ f.dps|price if f.dps else "–" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if fins[0].source_url %}<p class="small mt-12"><a href="{{ fins[0].source_url }}" rel="noopener noreferrer" target="_blank">Source for the latest results</a></p>{% endif %}
+    {% else %}
+    <p class="empty">No results imported for {{ co.ticker }}. Add them with <code>nse-agent import-financials</code>.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel" aria-labelledby="dv-h">
+    <h2 id="dv-h">Dividends</h2>
+    {% if divs %}
+    <ul class="stack">
+      {% for d in divs %}
+      <li><strong>KES {{ d.amount_per_share|price }}</strong> {{ d.action_type|replace("_", " ") }}{% if d.financial_year %} for {{ d.financial_year }}{% endif %}
+        <div class="meta">{% if d.book_closure_date %}Register closed {{ d.book_closure_date|d }}{% endif %}{% if d.book_closure_date and d.payment_date %}, {% endif %}{% if d.payment_date %}paid {{ d.payment_date|d }}{% endif %}</div></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="empty">No dividend records yet.</p>{% endif %}
+  </section>
+</div>
+
+<section class="panel mt-20" aria-labelledby="nw-h">
+  <h2 id="nw-h">News mentioning {{ co.ticker }}</h2>
+  {% if news %}
+  <ul class="stack">
+    {% for a in news %}
+    <li><a href="{{ a.url }}" rel="noopener noreferrer" target="_blank">{{ a.title }}</a>
+      <div class="meta">{{ a.source_code|replace("_", " ") }}, {{ a.published_at|d }}{% if a.in_title %}, headline mention{% endif %}</div></li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="empty">No stories in the last 90 days.</p>{% endif %}
+</section>
+{% endblock %}

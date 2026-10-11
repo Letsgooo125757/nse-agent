@@ -1,0 +1,33 @@
+# Weekday data update for the hosted database: prices, news and alerts.
+# Runs at 12:30 UTC = 15:30 Nairobi, after the NSE closes.
+# Needs the repository secret DATABASE_URL (Settings > Secrets and variables > Actions).
+name: daily-update
+
+on:
+  schedule:
+    - cron: "30 12 * * 1-5"
+  workflow_dispatch: {}
+
+concurrency:
+  group: daily-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      HTTP_USER_AGENT: ${{ vars.HTTP_USER_AGENT || 'nse-agent/0.1 (personal research project)' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install .
+      - name: Check the secret is set
+        run: test -n "$DATABASE_URL" || (echo "Add the DATABASE_URL repository secret first." && exit 1)
+      - run: nse-agent init-db        # applies any schema upgrades; safe to repeat
+      - run: nse-agent daily
+      - run: nse-agent status

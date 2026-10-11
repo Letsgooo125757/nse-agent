@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Ask | NSE desk{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Ask</h1>
+  <form method="post" action="/ask/new">
+    <input type="hidden" name="csrf_token" value="{{ csrf(request) }}">
+    <button class="quiet" type="submit">New conversation</button>
+  </form>
+</div>
+{% if not key_ok %}
+<div class="panel empty"><p>The assistant needs an Anthropic API key. Add <code>ANTHROPIC_API_KEY</code> to the app's environment and restart it.</p></div>
+{% else %}
+<p class="muted">Answers come from your own data: prices, results, news, your plan and portfolio. Every figure carries its date.
+  {{ usage.chat_questions }} of {{ limit }} questions used today.</p>
+<div id="chat" class="chat" aria-live="polite">
+  {% for h in history %}{% with q=h.q, answer=h.answer, tools=h.tools %}{% include "_exchange.html" %}{% endwith %}{% endfor %}
+</div>
+{% if not history %}
+<div class="suggestions">
+  {% for s in ["How is my portfolio doing?", "What should I do with this month's money, and why?", "Compare KCB, Equity, Co-op and Absa on P/E and dividend yield", "What dividend dates are coming up?"] %}
+  <button type="button" data-suggest="{{ s }}">{{ s }}</button>
+  {% endfor %}
+</div>
+{% endif %}
+<form id="ask-form" class="composer" method="post" action="/ask" hx-post="/ask" hx-target="#chat" hx-swap="beforeend" hx-disabled-elt="find button">
+  <input type="hidden" name="csrf_token" value="{{ csrf(request) }}">
+  <label class="visually-hidden" for="question">Your question</label>
+  <textarea id="question" name="question" rows="2" maxlength="2000" required placeholder="Ask about a company, the market, or your plan"></textarea>
+  <div>
+    <button type="submit">Ask</button>
+    <p class="thinking" aria-hidden="true">Looking things up…</p>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

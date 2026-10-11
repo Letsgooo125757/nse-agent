@@ -301,6 +301,13 @@ CREATE TABLE IF NOT EXISTS alerts (
 );
 CREATE INDEX IF NOT EXISTS idx_alerts_open ON alerts(profile_id, created_at DESC) WHERE acknowledged_at IS NULL;
 
+-- Web app: daily assistant usage, so a public deployment can cap API spend.
+CREATE TABLE IF NOT EXISTS app_usage (
+    day             DATE PRIMARY KEY,
+    chat_questions  INTEGER NOT NULL DEFAULT 0,
+    cost_usd        NUMERIC(10,4) NOT NULL DEFAULT 0
+);
+
 -- ---------------------------------------------------------------------
 -- Views the agent's tools will query
 -- ---------------------------------------------------------------------

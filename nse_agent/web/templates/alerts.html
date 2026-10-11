@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Alerts | NSE desk{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Alerts</h1>
+  {% if has_profile %}
+  <form method="post" action="/alerts/check">
+    <input type="hidden" name="csrf_token" value="{{ csrf(request) }}">
+    <button type="submit">Check now</button>
+  </form>
+  {% endif %}
+</div>
+<section class="panel" aria-labelledby="open-h">
+  <h2 id="open-h">Open</h2>
+  {% if open %}
+  <ul class="stack">
+    {% for a in open %}
+    <li class="alert" id="alert-{{ a.id }}">
+      <span class="sev sev-{{ a.severity }}">{{ a.severity|capitalize }}</span>
+      <div>{{ a.message|replace("`", "") }}<div class="meta">{{ a.created_at|d }}{% if a.ticker %}, <a href="/company/{{ a.ticker }}">{{ a.ticker }}</a>{% endif %}</div></div>
+      <form method="post" action="/alerts/{{ a.id }}/done" hx-post="/alerts/{{ a.id }}/done" hx-target="#alert-{{ a.id }}" hx-swap="outerHTML">
+        <input type="hidden" name="csrf_token" value="{{ csrf(request) }}">
+        <button class="quiet" type="submit">Mark done</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">Nothing needs your attention. The daily update checks for price moves, book closures, drift from your plan and news on your companies.</p>
+  {% endif %}
+</section>
+{% if done %}
+<section class="panel mt-20" aria-labelledby="done-h">
+  <h2 id="done-h">Recently done</h2>
+  <ul class="stack">{% for a in done %}<li class="muted small">{{ a.message }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

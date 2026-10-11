@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Plan | NSE desk{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Your plan</h1></div>
+{% if not plan %}
+<div class="panel empty"><p>Create your profile first: run <code>nse-agent profile create</code> on your computer.</p></div>
+{% else %}
+{% set pr = plan.profile %}
+<div class="grid grid-2">
+  <section class="panel" aria-labelledby="pri-h">
+    <h2 id="pri-h">In order of priority</h2>
+    <ol class="steps">
+      {% for s in plan.priorities %}
+      <li><h3>{{ s.title }}{% if s.monthly_amount %} <span class="amount">KES {{ s.monthly_amount|money }} a month</span>{% endif %}</h3><p>{{ s.detail }}</p></li>
+      {% endfor %}
+    </ol>
+    {% for w in plan.warnings %}<p class="flash error">{{ w }}</p>{% endfor %}
+  </section>
+  <section class="panel" aria-labelledby="you-h">
+    <h2 id="you-h">Your answers</h2>
+    <dl class="facts">
+      <div><dt>Risk score</dt><dd>{{ pr.risk_score }} of 100, {{ pr.risk_tolerance }}</dd></div>
+      <div><dt>Horizon</dt><dd>About {{ pr.horizon_years }} years</dd></div>
+      <div><dt>Investing each month</dt><dd>KES {{ pr.monthly_investable|money }}</dd></div>
+      <div><dt>Emergency fund</dt><dd>KES {{ plan.emergency_fund.current|money }}{% if plan.emergency_fund.target %} of {{ plan.emergency_fund.target|money }}{% endif %}</dd></div>
+      <div><dt>Per-company limit</dt><dd>{{ pr.max_stock_pct|pct(0) }} of shares</dd></div>
+      <div><dt>Per-sector limit</dt><dd>{{ pr.max_sector_pct|pct(0) }} of shares</dd></div>
+    </dl>
+    {% if pr.goals %}<p class="mt-16"><span class="muted">Goal:</span> {{ pr.goals }}</p>{% endif %}
+    <p class="small muted mt-12">Change your answers with <code>nse-agent profile create --update 1</code>.</p>
+  </section>
+</div>
+
+<section class="panel mt-20" aria-labelledby="mix-h">
+  <div class="panel-head"><h2 id="mix-h">Long-term money: now against target</h2><span class="meta">The dark tick marks the target</span></div>
+  <div class="alloc-rows">
+    {% for a in alloc %}
+    <div class="alloc-row">
+      <span><span class="swatch series-{{ a.key }}"></span> {{ a.label }}</span>
+      {{ alloc_bar(a.key, a.label, a.current, a.target) }}
+      <span class="num small">{{ a.current|pct if a.current is not none else "–" }} now, {{ a.target|pct(0) }} target</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% if not plan.current_mix_pct %}<p class="small muted mt-12">Nothing invested yet, so only targets are shown.</p>{% endif %}
+</section>
+
+<div class="grid grid-2 mt-20">
+  <section class="panel" aria-labelledby="why-h">
+    <h2 id="why-h">Why this mix</h2>
+    <ul class="stack">{% for r in plan.reasoning %}<li>{{ r }}</li>{% endfor %}</ul>
+  </section>
+  <section class="panel" aria-labelledby="rules-h">
+    <h2 id="rules-h">Rules for shares</h2>
+    <ul class="stack">{% for r in plan.share_rules %}<li>{{ r }}</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endif %}
+{% endblock %}

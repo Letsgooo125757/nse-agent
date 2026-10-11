@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Market | NSE desk{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Market</h1>
+  <span class="meta">{% if status.latest_price_date %}Closing prices from {{ status.latest_price_date|d }}{% else %}No prices loaded yet{% endif %}</span>
+</div>
+<nav class="filters" aria-label="Filter by sector">
+  <a class="chip" href="/market?sort={{ sort }}"{% if not sector %} aria-current="true"{% endif %}>All sectors</a>
+  {% for s in sectors %}<a class="chip" href="/market?sector={{ s.sector_code }}&amp;sort={{ sort }}"{% if sector == s.sector_code %} aria-current="true"{% endif %}>{{ s.name }}</a>{% endfor %}
+</nav>
+<section class="panel">
+  {% if rows %}
+  <div class="table-wrap">
+    <table>
+      {% macro sorter(key, label, cls="") %}<th class="{{ cls }}"><a href="/market?sort={{ key }}{% if sector %}&amp;sector={{ sector }}{% endif %}"{% if sort == key %} aria-current="true"{% endif %}>{{ label }}</a></th>{% endmacro %}
+      <thead><tr>
+        {{ sorter("ticker", "Company") }}
+        <th class="num">Price</th>
+        {{ sorter("change", "Day", "num") }}
+        <th>Last 45 days</th>
+        <th>52-week range</th>
+        {{ sorter("pe", "P/E", "num") }}
+        {{ sorter("yield", "Yield", "num") }}
+        {{ sorter("value", "Market value", "num") }}
+      </tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td class="ticker"><a href="/company/{{ r.ticker }}">{{ r.ticker }}</a><span class="name">{{ r.name }}</span></td>
+          <td class="num">{{ r.close|price }}</td>
+          <td class="num {{ r.change_pct|dir }}">{{ r.change_pct|pct(2, true) }}</td>
+          <td>{{ sparkline(series.get(r.ticker, []), label=r.ticker ~ " closes") }}</td>
+          <td>{{ range_bar(r.low_52w, r.high_52w, r.close) }}</td>
+          <td class="num">{{ r.pe_ratio|price if r.pe_ratio else "–" }}</td>
+          <td class="num">{{ r.dividend_yield_pct|pct if r.dividend_yield_pct else "–" }}</td>
+          <td class="num">{% if r.market_cap %}{{ (r.market_cap / 1000000000)|money(1) }}bn{% else %}–{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted mt-12">P/E and yield use the latest full-year results you've imported; "–" means none yet. Market value needs shares outstanding from those results.</p>
+  {% else %}
+  <p class="empty">No prices for this filter yet. Run <code>nse-agent ingest-prices --history</code>.</p>
+  {% endif %}
+</section>
+{% endblock %}

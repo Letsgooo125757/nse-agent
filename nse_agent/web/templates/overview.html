@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block board %}{% include "_board.html" %}{% endblock %}
+{% block content %}
+{% set PHRASE = {"high_interest_debt": "towards your high-interest debt", "emergency_cash": "into your emergency fund",
+                 "money_market": "into your money market fund", "government_securities": "towards T-bills or bonds",
+                 "nse_equities": "into NSE shares"} %}
+{% if not plan %}
+<div class="panel empty">
+  <h2>Set up your profile to see your plan and portfolio</h2>
+  <p>On your computer, run <code>nse-agent profile create</code> and answer the 12 questions. Then record what you own with <code>nse-agent buy</code> or the form on this page.</p>
+</div>
+{% else %}
+<div class="grid grid-2">
+  <section class="panel this-month" aria-labelledby="month-h">
+    <h2 id="month-h">This month</h2>
+    {% set split = plan.this_month %}
+    {% if split %}
+    <p class="lead">
+      {%- for k, v in split.items() -%}
+        {%- if loop.first %}Put {% elif loop.last %} and {% else %}, {% endif -%}
+        KES {{ v|money }} {{ PHRASE.get(k, LABELS.get(k, k)) }}
+      {%- endfor %}.
+    </p>
+    {% else %}
+    <p class="lead">There's nothing to allocate this month. Your plan has KES 0 set aside to invest.</p>
+    {% endif %}
+    <ul class="split">
+      {% for step in plan.priorities %}
+      <li><span>{{ step.title }}</span>{% if step.monthly_amount %}<span class="num">KES {{ step.monthly_amount|money }}</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% if plan.current_mix_pct %}
+    <div class="mini-alloc mt-16" aria-label="Long-term money now against target">
+      {% for c in ["money_market", "government_securities", "nse_equities"] %}
+      <div class="mini-row"><span>{{ LABELS[c] }}</span>{{ alloc_bar(c, LABELS[c], plan.current_mix_pct.get(c), plan.target_mix_pct.get(c)) }}<span class="num small">{{ plan.current_mix_pct.get(c)|pct(0) }} of {{ plan.target_mix_pct.get(c)|pct(0) }}</span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <p class="small mt-12"><a href="/plan">See the reasoning</a></p>
+  </section>
+
+  <section class="panel" aria-labelledby="wealth-h">
+    <h2 id="wealth-h">Your money</h2>
+    <p class="hero-figure"><small>KES</small>{{ pf.total_tracked_wealth|money }}</p>
+    <p class="muted small">Shares, funds and cash you've recorded{% if pf.holdings %}; shares are {{ pf.unrealised_pnl|signed }} on cost{% endif %}.</p>
+    <ul class="legend-list">
+      {% for cls, amount in pf.other_holdings_by_class.items() %}
+      <li><span class="swatch series-{{ cls }}"></span><span>{{ LABELS.get(cls, cls|replace("_", " ")|capitalize) }}</span><span class="num">{{ amount|money }}</span></li>
+      {% endfor %}
+      <li><span class="swatch series-nse_equities"></span><span>NSE shares</span><span class="num">{{ pf.shares_value|money }}</span></li>
+    </ul>
+  </section>
+</div>
+
+<div class="grid grid-2b mt-20">
+  <section class="panel" aria-labelledby="hold-h">
+    <div class="panel-head"><h2 id="hold-h">Holdings</h2>{% if pf.holdings %}<span class="meta">Dividends received KES {{ pf.dividends_received_net|money }}</span>{% endif %}</div>
+    {% if pf.holdings %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Company</th><th class="num hide-sm">Shares</th><th class="num hide-sm">Avg cost</th><th class="num hide-sm">Price</th><th class="num">Value</th><th class="num">Gain</th><th class="num hide-sm">Weight</th></tr></thead>
+        <tbody>
+          {% for h in pf.holdings %}
+          <tr>
+            <td class="ticker"><a href="/company/{{ h.ticker }}">{{ h.ticker }}</a><span class="name">{{ h.name }}</span></td>
+            <td class="num hide-sm">{{ h.shares|qty }}</td>
+            <td class="num hide-sm">{{ h.avg_cost|price }}</td>
+            <td class="num hide-sm">{{ h.price|price }}</td>
+            <td class="num">{{ h.market_value|money }}</td>
+            <td class="num {{ h.unrealised_pnl|dir }}">{{ h.unrealised_pnl|signed }}<br><span class="small">{{ h.unrealised_pct|pct(1, true) }}</span></td>
+            <td class="num hide-sm">{{ h.weight_pct|pct }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty">You haven't recorded any shares yet. Add a purchase below and it will show here with live gains.</p>
+    {% endif %}
+    <details class="mt-16">
+      <summary>Record a trade</summary>
+      <form method="post" action="/trades">
+        <input type="hidden" name="csrf_token" value="{{ csrf(request) }}">
+        <div class="form-row">
+          <label>Buy or sell<select name="side"><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
+          <label>Ticker<input name="ticker" list="tickers" required autocomplete="off" placeholder="SCOM"></label>
+          <label>Shares<input name="quantity" inputmode="decimal" required></label>
+          <label>Price (KES)<input name="price" inputmode="decimal" required></label>
+          <label>Fees (KES)<input name="fees" inputmode="decimal" placeholder="Estimate"></label>
+          <label>Date<input type="date" name="trade_date" value="{{ today.isoformat() }}"></label>
+        </div>
+        <datalist id="tickers">{% for t in tickers %}<option value="{{ t }}">{% endfor %}</datalist>
+        <p class="small muted my-10">Leave fees empty to estimate them from NSE rates (about 2.1%). Use the figure on your contract note when you have it.</p>
+        <button type="submit">Save trade</button>
+      </form>
+    </details>
+  </section>
+
+  <div class="grid align-start">
+    <section class="panel" aria-labelledby="al-h">
+      <div class="panel-head"><h2 id="al-h">Alerts</h2><a class="small" href="/alerts">All alerts</a></div>
+      {% if alerts %}
+      <ul class="stack">
+        {% for a in alerts %}<li><span class="sev sev-{{ a.severity }}">{{ a.severity|capitalize }}</span> <span class="small">{{ a.message|replace("`", "") }}</span></li>{% endfor %}
+      </ul>
+      {% else %}<p class="empty small">Nothing needs your attention.</p>{% endif %}
+    </section>
+    <section class="panel" aria-labelledby="div-h">
+      <h2 id="div-h">Next dividends</h2>
+      {% if dividends %}
+      <ul class="stack">
+        {% for d in dividends %}
+        <li><a href="/company/{{ d.ticker }}"><strong>{{ d.ticker }}</strong></a> KES {{ d.amount_per_share|price }} a share
+          <div class="meta">Register closes {{ d.book_closure_date|d }}{% if d.your_net_after_5pct_wht %}. You'd get about KES {{ d.your_net_after_5pct_wht|money }} after tax{% endif %}</div></li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="empty small">No book closures in the next 60 days.</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

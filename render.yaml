@@ -1,0 +1,22 @@
+# Render Blueprint: New > Blueprint > pick this repo. See DEPLOY.md.
+services:
+  - type: web
+    name: nse-desk
+    runtime: docker
+    plan: free
+    region: frankfurt          # closest Render region to Nairobi; match it in Neon
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL          # Neon connection string (sslmode=require)
+        sync: false
+      - key: APP_PASSWORD_HASH     # from `nse-agent web-setup` (paste without the quotes)
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NSE_AGENT_MODEL
+        value: claude-sonnet-5-5
+      - key: CHAT_DAILY_LIMIT
+        value: "40"

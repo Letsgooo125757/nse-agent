@@ -7,6 +7,12 @@ A personal research assistant for investing on the Nairobi Securities Exchange.
   money, a portfolio tracker with real NSE fees, and alerts.
 - **Phase 3, the assistant:** `nse-agent chat`, which answers questions using
   the data above through read-only tools, with dates on every figure.
+- **Phase 4, the web app:** a password-protected dashboard with the assistant
+  built in, deployable for $0/month ([DEPLOY.md](DEPLOY.md)).
+
+![Overview: price board, this month's plan, wealth, holdings, alerts and dividends](docs/screenshots/overview.png)
+
+<sub>Screenshots use demo prices and a demo portfolio.</sub>
 
 ```
             ┌───────────────┐   ┌──────────────┐   ┌────────────────┐
@@ -205,6 +211,49 @@ $0.02–0.05. Type
 import annual results (`import-financials`) for the companies you care about.
 Without them the assistant has no P/E or dividend-yield figures and will say so.
 
+## Phase 4: the web app
+
+```bash
+nse-agent web-setup      # choose a password; paste the two printed lines into .env
+nse-agent web            # http://127.0.0.1:8000
+```
+
+| Page | What it shows |
+|---|---|
+| Overview | A price board for your holdings and watchlist; this month's plan as one sentence plus now-vs-target bars; total wealth; holdings with gains; open alerts; next dividends; a form to record trades |
+| Market | Every company with price, day change, a 45-day sparkline, 52-week range, P/E, yield and market value. Filter by sector and sort |
+| Company | Price chart (1M–All), key figures, your position, two years of results with source link, dividends, news, watchlist button |
+| Plan | Priorities, your answers, now-vs-target mix, reasoning and rules for shares |
+| Alerts | Open alerts with "Mark done", and a "Check now" button |
+| News | The last 14 days, filtered by your companies or by topic |
+| Ask | The assistant from Phase 3, with a conversation history, a daily question cap and per-answer cost |
+
+| Market (light) | Company page (dark) | Phone |
+|---|---|---|
+| ![Market](docs/screenshots/market.png) | ![Company](docs/screenshots/company-dark.png) | ![Phone](docs/screenshots/phone.png) |
+
+**How it's built (`nse_agent/web/`):**
+- **Server:** FastAPI with Jinja templates. htmx handles the in-place updates (asking a question, marking an alert done) and Chart.js draws the price chart.
+- **No outside requests:** both libraries and both fonts (Bricolage Grotesque, Public Sans) are bundled.
+- **Same numbers everywhere:** every page calls the same functions as the CLI and the assistant's tools.
+- **Server-drawn graphics:** sparklines, range bars and allocation bars are SVG generated on the server, so they need no JavaScript and no inline styles.
+- **Accessibility:** works at phone width and in light and dark mode. The series colours passed a colour-blindness separation check in both modes.
+
+**Security:** it's built to be safe on the public internet.
+- **Login:** a single password stored as a salted scrypt hash, with throttling per IP.
+- **Sessions:** signed, HttpOnly, SameSite cookies; Secure and HSTS over HTTPS.
+- **Forms:** a CSRF token on every one.
+- **Headers:** a strict Content-Security-Policy (no inline or third-party scripts, styles or fonts), `X-Frame-Options: DENY`, and `no-store` on pages.
+- **Escaping:** everything is auto-escaped, including the AI's answers.
+- **Spend cap:** a daily limit on assistant questions.
+
+The tests check all of this, including that no page uses inline scripts or styles.
+
+**Hosting:** Render (web) + Neon (Postgres) + GitHub Actions (daily update), all free tiers.
+- `Dockerfile`, `render.yaml` and `.github/workflows/daily.yml` are included.
+- `nse-agent db-copy --to <url>` moves your local data to the hosted database.
+- Step-by-step instructions are in [DEPLOY.md](DEPLOY.md).
+
 ## Researched fundamentals (`data/fundamentals/`)
 
 These files hold the latest two full years of results for SCOM, EQTY, KCB,
@@ -315,7 +364,7 @@ them from annual-report PDFs is planned for a later phase.
 pytest -q
 ```
 
-There are 96 tests. The database tests use an embedded throwaway Postgres
+There are 120 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
@@ -327,6 +376,6 @@ it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
   summaries, `pgvector` search over news and annual reports (the
   docker-compose image already includes it), and PDF extraction of
   financials.
-- **Phase 4:** a web or WhatsApp front end.
+- **Phase 4 (done):** the web app. Still to come: AI news analysis, a Telegram bot for alerts on your phone, and reading annual-report PDFs automatically.
 
 For personal and educational use. This is not licensed investment advice.

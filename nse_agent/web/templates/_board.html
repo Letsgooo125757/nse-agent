@@ -1,0 +1,22 @@
+<section class="board" aria-label="Prices for your holdings and watchlist">
+  <div class="board-inner">
+    {% if board %}
+    <div class="board-grid">
+      {% for r in board %}
+      <a class="board-cell" href="/company/{{ r.ticker }}" title="{{ r.name }}">
+        <span class="board-ticker">{{ r.ticker }}</span>
+        <span class="board-price">{{ r.close|price }}</span>
+        <span class="board-change {{ r.change_pct|dir }}">{% if r.change_pct is not none %}{{ "▲" if r.change_pct > 0 else "▼" if r.change_pct < 0 else "" }} {{ r.change_pct|pct(2) }}{% else %}–{% endif %}</span>
+        {{ sparkline(r.closes, width=130, height=26, label=r.ticker ~ " recent closes") }}
+      </a>
+      {% endfor %}
+    </div>
+    <p class="board-note">
+      {% if status.latest_price_date %}Closing prices from {{ status.latest_price_date|d }}{% if status.price_data_age_days and status.price_data_age_days > 4 %}, {{ status.price_data_age_days }} days ago: run the daily update{% endif %}.{% endif %}
+      Showing your holdings and watchlist. <a href="/market">All companies</a>
+    </p>
+    {% else %}
+    <p class="board-note">No prices yet. Run <code>nse-agent ingest-prices --history</code> to load them.</p>
+    {% endif %}
+  </div>
+</section>

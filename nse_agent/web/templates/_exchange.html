@@ -1,0 +1,6 @@
+<div class="q">{{ q }}</div>
+{% if error %}
+<div class="a error" role="alert">{{ error }}</div>
+{% else %}
+<div class="a">{{ answer }}{% if tools or cost is defined %}<div class="a-meta">{% if tools %}Looked up: {{ tools|map("replace", "_", " ")|join(", ") }}.{% endif %}{% if cost is defined and cost %} Cost about ${{ "%.3f"|format(cost) }}.{% endif %}</div>{% endif %}</div>
+{% endif %}

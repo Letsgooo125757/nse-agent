@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}News | NSE desk{% endblock %}
+{% block content %}
+<div class="page-head"><h1>News</h1><span class="meta">Last 14 days</span></div>
+<nav class="filters" aria-label="Filter news">
+  <a class="chip" href="/news"{% if not ticker and not topic %} aria-current="true"{% endif %}>Everything</a>
+  {% for t in mine %}<a class="chip" href="/news?ticker={{ t }}"{% if ticker == t %} aria-current="true"{% endif %}>{{ t }}</a>{% endfor %}
+  {% for tp in topics %}<a class="chip" href="/news?topic={{ tp }}"{% if topic == tp %} aria-current="true"{% endif %}>{{ tp|replace("_", " ")|capitalize }}</a>{% endfor %}
+</nav>
+<section class="panel">
+  {% if error %}<p class="flash error">{{ error }}</p>{% endif %}
+  {% if articles %}
+  <ul class="stack">
+    {% for a in articles %}
+    <li>
+      <a href="{{ a.url }}" rel="noopener noreferrer" target="_blank">{{ a.title }}</a>
+      {% if a.summary %}<p class="small mt-12 muted">{{ a.summary|truncate(240) }}</p>{% endif %}
+      <div class="meta">{{ a.source_code|replace("_", " ") }}, {{ a.published_at|d }}
+        {% for tp in a.topics %}<a class="tag" href="/news?topic={{ tp }}">{{ tp|replace("_", " ") }}</a>{% endfor %}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">No stories match. News arrives each time <code>nse-agent ingest-news</code> runs.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -12,7 +12,7 @@ load_dotenv()
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 DATA_DIR = PACKAGE_DIR / "data"
-SCHEMA_PATH = PACKAGE_DIR.parent / "db" / "schema.sql"
+SCHEMA_PATH = DATA_DIR / "schema.sql"
 
 NAIROBI_TZ = ZoneInfo("Africa/Nairobi")
 

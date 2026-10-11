@@ -12,6 +12,8 @@ import psycopg
 
 from . import commands, loaders
 from .agent import cli as agent_cli
+from .web import cli as web_cli
+from . import dbcopy
 from .agent.chat import MissingApiKey
 from .config import NAIROBI_TZ, get_settings
 from .db import apply_schema, connect
@@ -237,6 +239,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("retag-news", help="re-run ticker/topic tagging on stored news").set_defaults(func=cmd_retag_news)
     commands.register(sub)
     agent_cli.register(sub)
+    web_cli.register(sub)
+    dbcopy.register(sub)
     sub.add_parser("daily", help="prices + news + alerts (schedule this after 15:00 EAT)").set_defaults(func=cmd_daily)
     sub.add_parser("status", help="row counts and last run of each job").set_defaults(func=cmd_status)
     return p

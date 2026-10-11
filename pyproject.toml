@@ -13,6 +13,12 @@ dependencies = [
     "beautifulsoup4>=4.12",
     "lxml>=5.0",
     "anthropic>=1.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+    "itsdangerous>=2.2",
+    "psycopg-pool>=3.2",
     "feedparser>=6.0",
     "python-dotenv>=1.0",
     "pgserver>=0.1.4",   # embedded Postgres for DATABASE_URL=embedded (no Docker)
@@ -25,10 +31,11 @@ dev = ["pytest>=8"]
 nse-agent = "nse_agent.cli:main"
 
 [tool.setuptools]
-packages = ["nse_agent", "nse_agent.sources", "nse_agent.agent"]
+packages = ["nse_agent", "nse_agent.sources", "nse_agent.agent", "nse_agent.web"]
 
 [tool.setuptools.package-data]
-nse_agent = ["data/*.csv", "data/*.json"]
+nse_agent = ["data/*.csv", "data/*.json", "data/*.sql"]
+"nse_agent.web" = ["templates/*.html", "static/*.css", "static/*.js", "static/vendor/*", "static/fonts/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
