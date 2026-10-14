@@ -116,6 +116,15 @@
       </ul>
       {% else %}<p class="empty small">No book closures in the next 60 days.</p>{% endif %}
     </section>
+    <section class="panel" aria-labelledby="nn-h">
+      <div class="panel-head"><h2 id="nn-h">News notes</h2><a class="small" href="/news">All news</a></div>
+      {% if notes %}
+      <ul class="stack">
+        {% for n in notes %}<li>{% include "_note.html" %}<div class="meta"><a href="{{ n.url }}" rel="noopener noreferrer" target="_blank">{{ n.title|truncate(70) }}</a>, {{ n.published_at|d }}</div></li>{% endfor %}
+      </ul>
+      <p class="small muted mt-12">Written by AI. Quick opinions, not advice.</p>
+      {% else %}<p class="empty small">No notes this week. They appear after the daily update reads news about your companies.</p>{% endif %}
+    </section>
   </div>
 </div>
 {% endif %}

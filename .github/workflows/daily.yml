@@ -1,4 +1,4 @@
-# Weekday update for the hosted database: news, prices (best effort) and alerts.
+# Weekday update for the hosted database: news, AI news notes, prices (best effort) and alerts.
 # Runs at 12:30 UTC = 15:30 Nairobi, after the NSE closes.
 # Needs the repository secret DATABASE_URL (Settings > Secrets and variables > Actions).
 #
@@ -42,5 +42,10 @@ jobs:
             exit 1
           }
       - run: nse-agent ingest-news
+      - name: AI notes on news about your companies
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: nse-agent analyze-news --optional
       - run: nse-agent alerts run
       - run: nse-agent status

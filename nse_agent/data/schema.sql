@@ -308,6 +308,23 @@ CREATE TABLE IF NOT EXISTS app_usage (
     cost_usd        NUMERIC(10,4) NOT NULL DEFAULT 0
 );
 
+-- AI notes on news: what an article means for each held/watched company.
+CREATE TABLE IF NOT EXISTS article_analysis (
+    article_id   BIGINT NOT NULL REFERENCES news_articles(id) ON DELETE CASCADE,
+    ticker       TEXT NOT NULL REFERENCES companies(ticker) ON UPDATE CASCADE,
+    sentiment    TEXT NOT NULL CHECK (sentiment IN ('positive','negative','neutral')),
+    why          TEXT NOT NULL CHECK (length(why) <= 240),
+    confidence   TEXT NOT NULL CHECK (confidence IN ('low','medium','high')),
+    model        TEXT NOT NULL,
+    analysed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (article_id, ticker)
+);
+CREATE INDEX IF NOT EXISTS idx_analysis_ticker ON article_analysis(ticker, analysed_at DESC);
+
+ALTER TABLE app_usage
+    ADD COLUMN IF NOT EXISTS news_articles INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS news_cost_usd NUMERIC(10,4) NOT NULL DEFAULT 0;
+
 -- ---------------------------------------------------------------------
 -- Views the agent's tools will query
 -- ---------------------------------------------------------------------

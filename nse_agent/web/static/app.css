@@ -327,3 +327,13 @@ footer.foot { color: var(--muted); font-size: 12.5px; padding: 0 max(20px, calc(
   .mini-row { grid-template-columns: 1fr 70px; }
   .mini-row svg { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* AI news notes */
+.notes { display: grid; gap: 6px; margin: 8px 0 4px; }
+.note { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: baseline; font-size: 14px; }
+.sent { font-size: 12px; font-weight: 650; white-space: nowrap; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.sent-positive { color: var(--gain); }
+.sent-negative { color: var(--loss); }
+.sent-neutral { color: var(--muted); }
+.note-ticker { font: 720 15px/1 var(--display); font-stretch: 80%; color: var(--ink); text-decoration: none; margin-right: 4px; }
+.note-ticker:hover { color: var(--accent); }

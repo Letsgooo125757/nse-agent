@@ -107,6 +107,7 @@
   <ul class="stack">
     {% for a in news %}
     <li><a href="{{ a.url }}" rel="noopener noreferrer" target="_blank">{{ a.title }}</a>
+      {% for n in (a.ai_notes or []) if n.ticker == co.ticker %}<div class="notes">{% include "_note.html" %}</div>{% endfor %}
       <div class="meta">{{ a.source_code|replace("_", " ") }}, {{ a.published_at|d }}{% if a.in_title %}, headline mention{% endif %}</div></li>
     {% endfor %}
   </ul>

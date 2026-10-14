@@ -280,6 +280,12 @@ def create_app(settings: WebSettings | None = None, *,
             data["plan"] = T.get_my_plan(ctx)
             data["alerts"] = T.get_alerts(ctx, limit=5)["alerts"]
         data["dividends"] = T.get_upcoming_dividends(ctx, days=60)["dividends"]
+        data["notes"] = conn.execute(
+            """SELECT x.ticker, x.sentiment, x.why, a.title, a.url, a.source_code, a.published_at
+               FROM article_analysis x JOIN news_articles a ON a.id = x.article_id
+               WHERE COALESCE(a.published_at, a.fetched_at) >= %s
+               ORDER BY (x.sentiment = 'neutral'), COALESCE(a.published_at, a.fetched_at) DESC LIMIT 5""",
+            (datetime.combine(ctx.today - timedelta(days=7), datetime.min.time()),)).fetchall()
         data["tickers"] = [r["ticker"] for r in conn.execute(
             "SELECT ticker FROM companies WHERE is_active ORDER BY ticker")]
         return render(request, "overview.html", data)
@@ -389,7 +395,12 @@ def create_app(settings: WebSettings | None = None, *,
         if ctx.profile_id is not None:
             mine = [h["ticker"] for h in T.get_my_portfolio(ctx)["holdings"]] + [r["ticker"] for r in conn.execute(
                 "SELECT ticker FROM watchlist WHERE profile_id = %s ORDER BY ticker", (ctx.profile_id,))]
+        month = conn.execute(
+            """SELECT COALESCE(sum(news_articles), 0) AS n, COALESCE(sum(news_cost_usd), 0) AS usd
+               FROM app_usage WHERE date_trunc('month', day) = date_trunc('month', %s::date)""",
+            (ctx.today,)).fetchone()
         return render(request, "news.html", {"articles": res["articles"], "ticker": ticker, "topic": topic,
+                                             "month": month,
                                              "topics": sorted(TOPIC_KEYWORDS), "mine": list(dict.fromkeys(mine)),
                                              "error": error})
 

@@ -17,7 +17,7 @@ from .db import apply_schema, resolve_url
 TABLES = [
     "sectors", "companies", "market_indices", "macro_series", "news_sources",
     "daily_prices", "index_values", "corporate_actions", "financial_statements",
-    "news_articles", "news_ticker_links", "macro_observations", "ingestion_runs",
+    "news_articles", "news_ticker_links", "article_analysis", "macro_observations", "ingestion_runs",
     "investor_profiles", "transactions", "other_holdings", "allocation_targets",
     "watchlist", "price_alert_rules", "alerts", "app_usage",
 ]

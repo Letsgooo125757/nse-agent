@@ -1,0 +1,5 @@
+{# one AI note: n has ticker, sentiment, why #}
+<div class="note note-{{ n.sentiment }}">
+  <span class="sent sent-{{ n.sentiment }}">{{ {"positive": "▲ Positive", "negative": "▼ Negative", "neutral": "● Neutral"}[n.sentiment] }}</span>
+  <span><a class="note-ticker" href="/company/{{ n.ticker }}">{{ n.ticker }}</a> {{ n.why }}</span>
+</div>

@@ -49,7 +49,7 @@ Every `git push` to `main` redeploys automatically.
 
 ## 4. Turn on the daily update (GitHub Actions)
 
-1. In your GitHub repo, go to **Settings > Secrets and variables > Actions > New repository secret**. Name it `DATABASE_URL` and paste the Neon string.
+1. In your GitHub repo, go to **Settings > Secrets and variables > Actions > New repository secret**. Name it `DATABASE_URL` and paste the Neon string. Add a second secret, `ANTHROPIC_API_KEY`, with your key so the job can write AI news notes. Without it, that step is skipped.
 2. Open **Actions > daily-update > Run workflow** to test it now. A green tick means prices and news landed in Neon.
 3. If the "Prices" step shows a yellow warning, that's expected: the price site blocks GitHub's servers. Step 5 covers prices.
 
@@ -79,6 +79,6 @@ The task runs every day, but on weekends the site shows Friday's prices again. T
 
 ## Costs and upgrades
 
-- **Cost:** $0/month for hosting, plus your Anthropic usage (about $0.02–0.05 per question).
+- **Cost:** $0/month for hosting, plus your Anthropic usage (about $0.02–0.05 per question, and about $0.003 per news article for AI notes, capped at 40 articles a run).
 - **Cold starts:** if the one-minute wake-up bothers you, upgrade the Render service to a paid instance (check render.com/pricing). Nothing else changes.
 - **Database size:** watch it in the Neon dashboard. Prices and news use a few MB a year.

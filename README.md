@@ -82,7 +82,8 @@ nse-agent status                     # row counts + last run of every job
 | `import-dividends FILE` | Loads dividend history. Feeds `v_upcoming_dividends`. |
 | `import-macro FILE` | Loads CBK rate, T-bill yields, USD/KES, inflation, Brent and the Fed rate. |
 | `retag-news` | Re-runs tagging over all stored news after you change aliases. |
-| `daily` | Runs `ingest-prices`, `ingest-news`, then `alerts run` for every profile. This is the command to schedule. |
+| `analyze-news [--days 3] [--limit N]` | AI notes: one "why this matters" sentence and a positive, negative or neutral rating per article and company you hold or watch. |
+| `daily` | Runs `ingest-prices`, `ingest-news`, `analyze-news` (if a key is set), then `alerts run` for every profile. This is the command to schedule. |
 | `status` | Shows data counts and pipeline health. |
 
 Header-only CSV templates are in `templates/`. Enter amounts in full KES, not
@@ -164,7 +165,8 @@ The same event is never raised twice. Weekly checks repeat at most once a week.
   or one sector above 40%.
 - **Plan:** your mix drifting more than 5 points from target, and the
   emergency fund below target.
-- **News:** high-relevance news on your stocks.
+- **News:** news on your stocks. With AI notes, positive notes are info alerts,
+  negative notes are warnings and neutral notes stay quiet.
 - **Data:** stale price data.
 
 ## Phase 3: the chat assistant
@@ -195,6 +197,25 @@ trade costs. It then writes the answer from the results.
   timing call.
 - News text is treated as untrusted data, which guards against prompt
   injection hidden in articles.
+
+## AI news notes
+
+```bash
+nse-agent analyze-news            # notes on new articles about companies you hold or watch
+```
+
+Each new article linked to one of your companies goes to Claude Haiku 4.5 with
+a fixed schema. It returns one sentence on why the article matters to each
+company, a rating (positive, negative or neutral) and a confidence level. The
+notes show on the News, Company and Overview pages, in alerts, and in the
+assistant's `search_news` results.
+
+- **Cost:** about $0.003 per article. `NEWS_ANALYSIS_LIMIT` caps each run
+  (default 40), and the News page shows this month's spend.
+- **Safety:** the model can only answer through the schema. Anything invalid,
+  or about a company it wasn't asked about, is dropped. Article text is marked
+  as untrusted, and the notes are labelled as AI opinions, never advice.
+- **No double billing:** each article and company pair is analysed once.
 
 **Safety:** the tools can't trade, change your profile or record
 transactions.
@@ -364,7 +385,7 @@ them from annual-report PDFs is planned for a later phase.
 pytest -q
 ```
 
-There are 120 tests. The database tests use an embedded throwaway Postgres
+There are 127 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
@@ -376,6 +397,6 @@ it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
   summaries, `pgvector` search over news and annual reports (the
   docker-compose image already includes it), and PDF extraction of
   financials.
-- **Phase 4 (done):** the web app. Still to come: AI news analysis, a Telegram bot for alerts on your phone, and reading annual-report PDFs automatically.
+- **Phase 4 (done):** the web app. AI news notes are done too. Still to come: a Telegram bot for alerts on your phone, and reading annual-report PDFs automatically.
 
 For personal and educational use. This is not licensed investment advice.

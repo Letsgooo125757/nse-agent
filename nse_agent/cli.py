@@ -160,6 +160,27 @@ def cmd_retag_news(args) -> int:
     return 0
 
 
+def cmd_analyze_news(args) -> int:
+    """AI notes for new articles about held/watched companies."""
+    from . import news_analysis
+    from .agent.chat import MissingApiKey, describe_api_error, make_client
+    try:
+        client = make_client()
+    except MissingApiKey as exc:
+        if args.optional:
+            print("analyze-news: skipped (no ANTHROPIC_API_KEY set).")
+            return 0
+        raise
+    with connect() as conn:
+        res = news_analysis.run(conn, client, days=args.days, limit=args.limit,
+                                log=(lambda *_: None) if args.quiet else print)
+    print(f"analyze-news: {res.articles_analysed} articles, {res.notes_saved} notes, "
+          f"~${res.cost_usd:.4f}" + (f", {res.skipped_over_limit} left for the next run" if res.skipped_over_limit else ""))
+    for f in res.failures[:5]:
+        print(f"  failed: {f}", file=sys.stderr)
+    return 1 if res.failures and not res.articles_analysed else 0
+
+
 def cmd_daily(args) -> int:
     """What cron runs after market close: prices, then news."""
     rc = 0
@@ -169,6 +190,10 @@ def cmd_daily(args) -> int:
         print(f"prices FAILED — {exc}", file=sys.stderr)
         rc = 1
     rc |= cmd_ingest_news(argparse.Namespace(source=None))
+    try:  # AI notes on the new articles, if an API key is configured
+        cmd_analyze_news(argparse.Namespace(days=3, limit=None, quiet=True, optional=True))
+    except Exception as exc:
+        print(f"analyze-news FAILED — {exc}", file=sys.stderr)
     # then alerts for every profile
     with connect() as conn:
         pids = [r["id"] for r in conn.execute("SELECT id FROM investor_profiles ORDER BY id")]
@@ -238,6 +263,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("retag-news", help="re-run ticker/topic tagging on stored news").set_defaults(func=cmd_retag_news)
     commands.register(sub)
+    sp = sub.add_parser("analyze-news", help="AI 'why this matters' notes on news about your companies")
+    sp.add_argument("--days", type=int, default=3, help="look back this many days (default 3)")
+    sp.add_argument("--limit", type=int, help="max articles this run (default NEWS_ANALYSIS_LIMIT or 40)")
+    sp.add_argument("--quiet", action="store_true")
+    sp.add_argument("--optional", action="store_true", help="exit quietly if no API key is set")
+    sp.set_defaults(func=cmd_analyze_news)
     agent_cli.register(sub)
     web_cli.register(sub)
     dbcopy.register(sub)

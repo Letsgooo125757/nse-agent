@@ -174,9 +174,25 @@ def check_stale(latest: date | None, today: date, stale_after_days: int) -> list
 
 
 def check_news(articles: list[dict]) -> list[AlertDraft]:
-    return [AlertDraft("news", "info", f"{a['ticker']} in the news: {a['title']} ({a['source_code']})",
-                       f"news:{a['article_id']}:{a['ticker']}", a["ticker"], {"url": a["url"]})
-            for a in articles]
+    """News alerts. With an AI note, the alert carries its rating and reason;
+    neutral notes don't alert (they're on the News page instead)."""
+    out = []
+    for a in articles:
+        sentiment = a.get("sentiment")
+        if sentiment == "neutral":
+            continue
+        if sentiment in ("positive", "negative"):
+            word = "Good news" if sentiment == "positive" else "Bad news"
+            msg = f"{word} for {a['ticker']} (AI note): {a['why']} Source: {a['title']} ({a['source_code']})"
+            sev = "warning" if sentiment == "negative" else "info"
+        elif (a.get("relevance") or 0) >= NEWS_MIN_RELEVANCE:
+            msg = f"{a['ticker']} in the news: {a['title']} ({a['source_code']})"
+            sev = "info"
+        else:
+            continue
+        out.append(AlertDraft("news", sev, msg, f"news:{a['article_id']}:{a['ticker']}", a["ticker"],
+                              {"url": a["url"], "sentiment": sentiment}))
+    return out
 
 
 # ---------------------------------------------------------------- runner
@@ -202,8 +218,10 @@ def run_alerts(conn: psycopg.Connection, profile_id: int, *, today: date,
            AND book_closure_date BETWEEN %s AND %s""",
         (list(tracked), today, today + timedelta(days=BOOK_CLOSURE_DAYS))).fetchall() if tracked else []
     news = conn.execute(
-        """SELECT * FROM v_ticker_news WHERE ticker = ANY(%s) AND relevance >= %s
-           AND COALESCE(published_at, now()) >= %s""",
+        """SELECT n.*, x.sentiment, x.why FROM v_ticker_news n
+           LEFT JOIN article_analysis x ON x.article_id = n.article_id AND x.ticker = n.ticker
+           WHERE n.ticker = ANY(%s) AND (n.relevance >= %s OR x.sentiment IS NOT NULL)
+           AND COALESCE(n.published_at, now()) >= %s""",
         (list(tracked), NEWS_MIN_RELEVANCE, today - NEWS_LOOKBACK)).fetchall() if tracked else []
     latest = conn.execute("SELECT max(trade_date) AS d FROM daily_prices").fetchone()["d"]
 
