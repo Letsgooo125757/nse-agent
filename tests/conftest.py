@@ -17,6 +17,14 @@ import pytest
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
+@pytest.fixture(autouse=True)
+def _no_real_api_keys(monkeypatch):
+    """Tests never use real keys from your .env (it is loaded when nse_agent is imported).
+    Without this, a MANSA_API_KEY in .env would make the afx-based tests call the live
+    Mansa API. Tests that need a key set a fake one themselves."""
+    monkeypatch.delenv("MANSA_API_KEY", raising=False)
+
+
 @pytest.fixture(scope="session")
 def database_url():
     url = os.getenv("TEST_DATABASE_URL")
