@@ -2,9 +2,10 @@
 # Runs at 12:30 UTC = 15:30 Nairobi, after the NSE closes.
 # Needs the repository secret DATABASE_URL (Settings > Secrets and variables > Actions).
 #
-# The free price site (afx.kwayisi.org) blocks GitHub's data-centre network, so
-# prices usually come from your own computer instead (see DEPLOY.md, step 5).
-# This job still tries, and shows a warning rather than failing if it can't.
+# Prices come from the Mansa API when the MANSA_API_KEY secret is set (it works
+# from GitHub's servers). Without it the job falls back to afx.kwayisi.org, which
+# blocks GitHub's data-centre network, so prices then come from your own computer
+# (see DEPLOY.md, step 5). A failed price step shows a warning rather than failing the job.
 name: daily-update
 
 on:
@@ -36,9 +37,11 @@ jobs:
       - run: nse-agent init-db        # applies any schema upgrades; safe to repeat
       - name: Prices (best effort)
         continue-on-error: true
+        env:
+          MANSA_API_KEY: ${{ secrets.MANSA_API_KEY }}
         run: |
           nse-agent ingest-prices || {
-            echo "::warning title=Prices not fetched::The price site can't be reached from GitHub. Your computer's scheduled 'nse-agent ingest-prices' covers this (DEPLOY.md step 5)."
+            echo "::warning title=Prices not fetched::Add the MANSA_API_KEY secret (DEPLOY.md step 4), or rely on your computer's scheduled 'nse-agent ingest-prices' (step 5)."
             exit 1
           }
       - run: nse-agent ingest-news

@@ -17,7 +17,7 @@ from . import dbcopy
 from .agent.chat import MissingApiKey
 from .config import NAIROBI_TZ, get_settings
 from .db import apply_schema, connect
-from .sources import afx, csv_files, rss
+from .sources import afx, csv_files, mansa, rss
 from .portfolio import PortfolioError
 from .sources.base import SourceError
 
@@ -60,16 +60,37 @@ def price_warnings(as_of, now: datetime, stale_after_days: int) -> list[str]:
     return out
 
 
+def fetch_snapshot(source: str, s, now: datetime):
+    """The latest all-securities snapshot from the chosen source.
+
+    "auto" uses Mansa when MANSA_API_KEY is set (it works from GitHub's servers,
+    which afx blocks) and falls back to afx if Mansa fails.
+    """
+    if source == "afx" or (source == "auto" and not s.mansa_api_key):
+        return afx.fetch_market(s.afx_base_url, fallback_date=now.date())
+    try:
+        return mansa.fetch_market(s.mansa_base_url, s.mansa_api_key, fallback_date=now.date())
+    except SourceError as exc:
+        if source == "mansa":
+            raise
+        print(f"  Mansa failed ({exc}); trying afx", file=sys.stderr)
+        batch = afx.fetch_market(s.afx_base_url, fallback_date=now.date())
+        batch.warnings.append(f"Mansa failed, used afx instead: {exc}")
+        return batch
+
+
 def cmd_ingest_prices(args) -> int:
     s = get_settings()
     now = datetime.now(NAIROBI_TZ)
-    with connect() as conn, loaders.ingestion_run(conn, "prices", afx.SOURCE) as run:
-        batch = afx.fetch_market(s.afx_base_url, fallback_date=now.date())
+    source = getattr(args, "source", "auto")
+    planned = "afx" if source == "afx" or (source == "auto" and not s.mansa_api_key) else mansa.SOURCE
+    with connect() as conn, loaders.ingestion_run(conn, "prices", planned) as run:
+        batch = fetch_snapshot(source, s, now)  # inside the run, so a failed fetch is logged
         run.warnings += batch.warnings + price_warnings(batch.as_of, now, s.stale_after_days)
         loaders.upsert_prices(conn, batch.bars, run)
         loaders.upsert_indices(conn, batch.indices, run)
 
-        if args.history:
+        if args.history:  # per-stock history only comes from afx (Mansa's is a paid feature)
             tickers = args.tickers or sorted(b.ticker for b in batch.bars if b.volume)
             for t in tickers:
                 try:
@@ -77,9 +98,31 @@ def cmd_ingest_prices(args) -> int:
                 except SourceError as exc:
                     run.warnings.append(f"{t}: {exc}")
                 time.sleep(args.delay)  # be polite to a free site
-    print(f"Prices as of {batch.as_of}: {run.rows_written} rows written")
+    print(f"Prices as of {batch.as_of} (from {batch.source}): {run.rows_written} rows written")
     for w in run.warnings:
         print("  warning:", w)
+    return 0
+
+
+def cmd_compare_prices(args) -> int:
+    """Fetch both sources live and print where they disagree. Writes nothing."""
+    s = get_settings()
+    now = datetime.now(NAIROBI_TZ)
+    a = afx.fetch_market(s.afx_base_url, fallback_date=now.date())
+    m = mansa.fetch_market(s.mansa_base_url, s.mansa_api_key, fallback_date=now.date())
+    ab = {b.ticker: b for b in a.bars}
+    mb = {b.ticker: b for b in m.bars}
+    both = sorted(ab.keys() & mb.keys())
+    diffs = [(t, ab[t].close, mb[t].close) for t in both if ab[t].close != mb[t].close]
+    print(f"afx as of {a.as_of}: {len(ab)} securities. mansa as of {m.as_of}: {len(mb)} securities.")
+    print(f"In both: {len(both)}. Same close: {len(both) - len(diffs)}. Different: {len(diffs)}.")
+    for t, x, y in diffs:
+        print(f"  {t:<6} afx {x:>10}  mansa {y:>10}  ({(y - x) / x * 100:+.2f}%)")
+    only_a, only_m = sorted(ab.keys() - mb.keys()), sorted(mb.keys() - ab.keys())
+    if only_a:
+        print("Only in afx:", ", ".join(only_a))
+    if only_m:
+        print("Only in mansa:", ", ".join(only_m))
     return 0
 
 
@@ -241,7 +284,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--history", action="store_true", help="also backfill recent days per stock")
     sp.add_argument("--tickers", nargs="*", help="limit --history to these tickers")
     sp.add_argument("--delay", type=float, default=1.0, help="seconds between per-stock requests")
+    sp.add_argument("--source", choices=["auto", "mansa", "afx"], default="auto",
+                    help="auto = Mansa if MANSA_API_KEY is set (falls back to afx), else afx")
     sp.set_defaults(func=cmd_ingest_prices)
+
+    sub.add_parser("compare-prices", help="compare live afx and Mansa closes (writes nothing)"
+                   ).set_defaults(func=cmd_compare_prices)
 
     sp = sub.add_parser("ingest-news", help="fetch RSS feeds and tag articles")
     sp.add_argument("--source", nargs="*", help="only these source_codes")

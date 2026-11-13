@@ -4,7 +4,7 @@
 |---|---|---|
 | Web app | **Render** (Docker web service) | Sleeps after 15 min idle, so the first visit after a break takes about a minute. 750 instance-hours a month, enough for one app running all month. |
 | Database | **Neon** (serverless Postgres) | 1 GB storage per project (years of NSE data fit easily). Compute suspends after 5 min idle and wakes in about a second. No card needed. |
-| Daily update | **GitHub Actions** + your computer | GitHub fetches news and runs alerts every weekday at 15:30 Nairobi time. Prices come from your computer, because the free price site blocks GitHub's servers. |
+| Daily update | **GitHub Actions** (+ your computer as a backup) | GitHub fetches prices (Mansa API), news and runs alerts every weekday at 15:30 Nairobi time. Without a Mansa key, prices come from your computer instead, because the free afx price site blocks GitHub's servers. |
 | Assistant | Anthropic API | Pay-as-you-go from your credits. Capped by `CHAT_DAILY_LIMIT`. |
 
 All three are tied to your GitHub login. Pick **Frankfurt** for both Render and Neon; it's the closest region to Nairobi and keeps them next to each other.
@@ -49,13 +49,15 @@ Every `git push` to `main` redeploys automatically.
 
 ## 4. Turn on the daily update (GitHub Actions)
 
-1. In your GitHub repo, go to **Settings > Secrets and variables > Actions > New repository secret**. Name it `DATABASE_URL` and paste the Neon string. Add a second secret, `ANTHROPIC_API_KEY`, with your key so the job can write AI news notes. Without it, that step is skipped.
+1. In your GitHub repo, go to **Settings > Secrets and variables > Actions > New repository secret**. Name it `DATABASE_URL` and paste the Neon string. Add a second secret, `ANTHROPIC_API_KEY`, with your key so the job can write AI news notes. Without it, that step is skipped. Add a third, `MANSA_API_KEY`, so the job can fetch prices itself (the free Mansa plan is enough).
 2. Open **Actions > daily-update > Run workflow** to test it now. A green tick means prices and news landed in Neon.
-3. If the "Prices" step shows a yellow warning, that's expected: the price site blocks GitHub's servers. Step 5 covers prices.
+3. If the "Prices" step shows a yellow warning, the `MANSA_API_KEY` secret is missing or wrong. Without it, the job tries afx, which blocks GitHub's servers. Step 5 covers prices from your computer.
 
 GitHub pauses scheduled workflows in public repos after 60 days without commits. If that happens, Actions shows a banner; click **Enable workflow**.
 
-## 5. Fetch prices from your computer
+## 5. Fetch prices from your computer (optional with Mansa, needed without it)
+
+With the `MANSA_API_KEY` secret set, GitHub already fetches prices every weekday at 15:30, so this step is only a backup. Without the secret, it is how prices get in.
 
 Your `.env` points at Neon, so prices fetched on your computer land in the same database the website reads.
 

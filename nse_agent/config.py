@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -27,6 +27,9 @@ class Settings:
     stale_after_days: int
     feeds_path: Path
     pgdata_dir: Path
+    mansa_base_url: str = "https://mansaapi.com/api/v1"
+    # repr=False keeps the key out of tracebacks and logs.
+    mansa_api_key: str = field(default="", repr=False)
 
 
 def get_settings() -> Settings:
@@ -43,4 +46,7 @@ def get_settings() -> Settings:
         stale_after_days=int(os.getenv("STALE_AFTER_DAYS", "5")),
         feeds_path=Path(os.getenv("FEEDS_PATH", str(DATA_DIR / "feeds.json"))),
         pgdata_dir=Path(os.getenv("PGDATA_DIR", str(PACKAGE_DIR.parent / ".pgdata"))),
+        # Use the apex domain: the www host redirects, and redirects can drop the auth header.
+        mansa_base_url=os.getenv("MANSA_BASE_URL", "https://mansaapi.com/api/v1"),
+        mansa_api_key=os.getenv("MANSA_API_KEY", "").strip(),
     )

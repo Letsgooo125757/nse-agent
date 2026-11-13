@@ -16,7 +16,7 @@ A personal research assistant for investing on the Nairobi Securities Exchange.
 
 ```
             ┌───────────────┐   ┌──────────────┐   ┌────────────────┐
- sources →  │ afx (prices)  │   │ RSS feeds    │   │ CSV imports    │
+ sources →  │ Mansa / afx   │   │ RSS feeds    │   │ CSV imports    │
             │ market + per- │   │ local/global │   │ history, FY    │
             │ stock pages   │   │ news         │   │ results, divs, │
             └──────┬────────┘   └──────┬───────┘   │ macro          │
@@ -74,7 +74,8 @@ nse-agent status                     # row counts + last run of every job
 |---|---|
 | `init-db` | Creates or updates the schema and loads reference data. Safe to re-run. |
 | `seed` | Reloads `nse_agent/data/*.csv` after you edit companies or aliases. |
-| `ingest-prices [--history] [--tickers ..]` | Fetches the price snapshot for all listings plus NASI. `--history` also backfills recent days per stock. |
+| `ingest-prices [--source auto\|mansa\|afx] [--history] [--tickers ..]` | Fetches the price snapshot for all listings. `auto` (default) uses Mansa when `MANSA_API_KEY` is set and falls back to afx. NASI comes from afx only. `--history` also backfills recent days per stock from afx. |
+| `compare-prices` | Fetches afx and Mansa live and prints where their closes differ. Writes nothing. |
 | `ingest-news [--source ..]` | Pulls the RSS feeds, dedupes by URL, and tags each article with tickers and topics. |
 | `check-feeds` | Tests every feed without saving anything. |
 | `import-prices FILE [--ticker X]` | Loads historical prices from CSV. Flexible headers (`Date`/`trade_date`, `Close`/`Price`, ...). |
@@ -315,6 +316,19 @@ On Windows, use Task Scheduler with the same commands.
 
 ## Data sources, and the caveats that matter
 
+**Prices (Mansa API, with afx as the fallback).** Set `MANSA_API_KEY` (free plan
+at mansamarkets.com) and `ingest-prices` uses it first. One or two requests
+return every NSE security, against 100 a day on the free plan. Unlike afx, Mansa
+works from GitHub's servers, so the daily job can fetch prices itself. Its limits:
+
+- Quotes refresh about every 30 minutes. The run at 15:30 gets the close, and a
+  snapshot from before 15:00 is flagged, as with afx.
+- Per-stock history and the NASI index are not on the free plan. History
+  comes from afx (`--history`) and from the daily rows we store.
+- The API lists about 56 securities, fewer than `companies.csv`. Tickers it lacks
+  are simply not updated from Mansa. `compare-prices` shows what differs.
+- The free plan is for non-commercial use, which fits a personal project.
+
 **Prices (afx.kwayisi.org).** This free public mirror of NSE prices is fine for
 a personal project. Before relying on it:
 
@@ -322,8 +336,7 @@ a personal project. Before relying on it:
   still showing a November 2024 session. The pipeline reads the session date
   off the page and flags the run as *stale* when it is more than
   `STALE_AFTER_DAYS` old, so `nse-agent status` will tell you. If it stays
-  stale, switch sources: add an adapter in `nse_agent/sources/` (for example
-  Mansa API, or a broker export) or use `import-prices`.
+  stale, switch sources (set `MANSA_API_KEY`, see below), or use `import-prices`.
 - **Intraday runs** are flagged, because the "price" before 15:00 is not the
   closing price. A later run the same day overwrites it.
 - **Untraded securities** get a row with `volume = 0` and the previous price
@@ -385,7 +398,7 @@ them from annual-report PDFs is planned for a later phase.
 pytest -q
 ```
 
-There are 127 tests. The database tests use an embedded throwaway Postgres
+There are 148 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
