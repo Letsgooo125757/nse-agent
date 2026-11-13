@@ -154,6 +154,8 @@ def with_key(monkeypatch):
     # ABSA is in companies.csv; ZZZZ is not and must be skipped with a warning.
     monkeypatch.setattr(mansa, "_get", lambda *a: page(
         [row("SCOM", 34.95, -0.05, 93935), row("ABSA", 31.95, 0.95, 37150), row("ZZZZ", 5)]))
+    # afx is unreachable unless a test says otherwise (as on GitHub); never hit the network.
+    monkeypatch.setattr(afx, "fetch", lambda *a, **k: (_ for _ in ()).throw(afx.SourceError("offline")))
 
 
 def test_ingest_prices_uses_mansa_when_a_key_is_set(db, with_key, capsys):
@@ -211,3 +213,27 @@ def test_compare_prices_reports_differences_and_writes_nothing(db, with_key, mon
     out = capsys.readouterr().out
     assert "afx as of" in out and "mansa as of 2026-11-13" in out and "Same close" in out
     assert q(db, "SELECT count(*) AS n FROM daily_prices")[0]["n"] == 0
+
+
+def test_auto_tops_up_securities_mansa_lacks_from_afx(db, with_key, monkeypatch, capsys):
+    monkeypatch.setattr(afx, "fetch", lambda url, **k: (FIXTURES / "afx_market.html").read_bytes())
+    assert cli.main(["ingest-prices"]) == 0
+    assert "taken from afx" in capsys.readouterr().out
+    rows = {r["ticker"]: r for r in q(db, "SELECT ticker, source, close FROM daily_prices")}
+    assert rows["SCOM"]["source"] == "mansa" and rows["SCOM"]["close"] == Decimal("34.9500")  # Mansa wins
+    assert rows["ABSA"]["source"] == "mansa"
+    afx_only = {t for t, r in rows.items() if r["source"] == "afx"}
+    assert afx_only and "SCOM" not in afx_only and "ABSA" not in afx_only
+    assert q(db, "SELECT count(*) AS n FROM index_values")[0]["n"] == 1  # NASI, from afx
+
+
+def test_unreachable_afx_is_not_an_error_or_a_warning(db, with_key, capsys):
+    assert cli.main(["ingest-prices"]) == 0          # with_key makes afx unreachable
+    assert "afx not reachable" in capsys.readouterr().out
+    run = q(db, "SELECT * FROM v_pipeline_health WHERE job='prices'")[0]
+    assert not any("afx" in w.lower() for w in run["warnings"])   # a note on screen, not a warning
+
+
+def test_explicit_mansa_source_never_calls_afx(db, with_key, monkeypatch):
+    monkeypatch.setattr(afx, "fetch", lambda *a, **k: pytest.fail("afx must not be called"))
+    assert cli.main(["ingest-prices", "--source", "mansa"]) == 0

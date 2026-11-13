@@ -74,7 +74,7 @@ nse-agent status                     # row counts + last run of every job
 |---|---|
 | `init-db` | Creates or updates the schema and loads reference data. Safe to re-run. |
 | `seed` | Reloads `nse_agent/data/*.csv` after you edit companies or aliases. |
-| `ingest-prices [--source auto\|mansa\|afx] [--history] [--tickers ..]` | Fetches the price snapshot for all listings. `auto` (default) uses Mansa when `MANSA_API_KEY` is set and falls back to afx. NASI comes from afx only. `--history` also backfills recent days per stock from afx. |
+| `ingest-prices [--source auto\|mansa\|afx] [--history] [--tickers ..]` | Fetches the price snapshot for all listings. `auto` (default) uses Mansa when `MANSA_API_KEY` is set, adds the securities and NASI index Mansa lacks from afx when afx is reachable, and falls back to afx alone if Mansa fails. `--history` also backfills recent days per stock from afx. |
 | `compare-prices` | Fetches afx and Mansa live and prints where their closes differ. Writes nothing. |
 | `ingest-news [--source ..]` | Pulls the RSS feeds, dedupes by URL, and tags each article with tickers and topics. |
 | `check-feeds` | Tests every feed without saving anything. |
@@ -325,8 +325,10 @@ works from GitHub's servers, so the daily job can fetch prices itself. Its limit
   snapshot from before 15:00 is flagged, as with afx.
 - Per-stock history and the NASI index are not on the free plan. History
   comes from afx (`--history`) and from the daily rows we store.
-- The API lists about 56 securities, fewer than `companies.csv`. Tickers it lacks
-  are simply not updated from Mansa. `compare-prices` shows what differs.
+- The API lists about 56 securities, while afx lists about 72. On your computer,
+  `ingest-prices` tops up the rest from afx. On GitHub, where afx is blocked, those
+  securities are not updated, so keep the laptop task as a backup if you hold one.
+  `compare-prices` shows what differs. Run it after 15:45 so both sites show the same session.
 - The free plan is for non-commercial use, which fits a personal project.
 
 **Prices (afx.kwayisi.org).** This free public mirror of NSE prices is fine for
@@ -398,7 +400,7 @@ them from annual-report PDFs is planned for a later phase.
 pytest -q
 ```
 
-There are 148 tests. The database tests use an embedded throwaway Postgres
+There are 151 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.

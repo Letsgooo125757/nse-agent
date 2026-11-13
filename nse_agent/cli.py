@@ -60,16 +60,36 @@ def price_warnings(as_of, now: datetime, stale_after_days: int) -> list[str]:
     return out
 
 
+def _top_up_from_afx(batch, s, now: datetime) -> None:
+    """Add what Mansa doesn't cover (about 16 securities, and the NASI index) from afx.
+
+    Best effort: afx is blocked from GitHub's servers, so there this quietly does
+    nothing. Mansa's prices always win where both have a security.
+    """
+    try:
+        extra = afx.fetch_market(s.afx_base_url, fallback_date=now.date())
+    except SourceError as exc:
+        print(f"  note: afx not reachable, so securities Mansa doesn't list were not updated ({exc})")
+        return
+    have = {b.ticker for b in batch.bars}
+    added = [b for b in extra.bars if b.ticker not in have]
+    batch.bars += added
+    batch.indices += extra.indices
+    if added:
+        print(f"  note: {len(added)} securities Mansa doesn't list were taken from afx (session {extra.as_of})")
+
+
 def fetch_snapshot(source: str, s, now: datetime):
     """The latest all-securities snapshot from the chosen source.
 
     "auto" uses Mansa when MANSA_API_KEY is set (it works from GitHub's servers,
-    which afx blocks) and falls back to afx if Mansa fails.
+    which afx blocks), tops it up from afx where possible, and falls back to afx
+    alone if Mansa fails. "mansa" uses Mansa only.
     """
     if source == "afx" or (source == "auto" and not s.mansa_api_key):
         return afx.fetch_market(s.afx_base_url, fallback_date=now.date())
     try:
-        return mansa.fetch_market(s.mansa_base_url, s.mansa_api_key, fallback_date=now.date())
+        batch = mansa.fetch_market(s.mansa_base_url, s.mansa_api_key, fallback_date=now.date())
     except SourceError as exc:
         if source == "mansa":
             raise
@@ -77,6 +97,9 @@ def fetch_snapshot(source: str, s, now: datetime):
         batch = afx.fetch_market(s.afx_base_url, fallback_date=now.date())
         batch.warnings.append(f"Mansa failed, used afx instead: {exc}")
         return batch
+    if source == "auto":
+        _top_up_from_afx(batch, s, now)
+    return batch
 
 
 def cmd_ingest_prices(args) -> int:
