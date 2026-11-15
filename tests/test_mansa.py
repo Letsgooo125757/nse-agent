@@ -237,3 +237,17 @@ def test_unreachable_afx_is_not_an_error_or_a_warning(db, with_key, capsys):
 def test_explicit_mansa_source_never_calls_afx(db, with_key, monkeypatch):
     monkeypatch.setattr(afx, "fetch", lambda *a, **k: pytest.fail("afx must not be called"))
     assert cli.main(["ingest-prices", "--source", "mansa"]) == 0
+
+
+def test_quickmart_is_a_known_company_so_its_prices_are_kept(db, monkeypatch):
+    """QMRT is not on Mansa; its price comes from afx and must not be skipped as unknown."""
+    monkeypatch.setenv("MANSA_API_KEY", KEY)
+    monkeypatch.setattr(mansa, "_get", lambda *a: page([row("SCOM", 34.95)]))
+    afx_html = (FIXTURES / "afx_market.html").read_text()
+    row_html = "<tr><td>QMRT</td><td>Quick Mart Plc</td><td>20,000</td><td>7.50</td><td>+0.10</td></tr>"
+    head, tbody, tail = afx_html.rpartition("</tbody>")  # the stock table is the last one
+    monkeypatch.setattr(afx, "fetch", lambda url, **k: (head + row_html + tbody + tail).encode())
+    assert cli.main(["ingest-prices"]) == 0
+    assert q(db, "SELECT sector_code FROM companies WHERE ticker='QMRT'")[0]["sector_code"] == "COMMERCIAL"
+    qm = q(db, "SELECT source, close FROM daily_prices WHERE ticker='QMRT'")
+    assert qm == [{"source": "afx", "close": Decimal("7.5000")}]

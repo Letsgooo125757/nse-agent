@@ -281,7 +281,7 @@ def test_db_copy(seeded):
     with psycopg.connect(seeded) as c:            # simulate a database created before Phase 4
         c.execute("DROP TABLE app_usage")
     counts = copy_database(seeded, target, log=lambda *_: None)
-    assert counts["transactions"] == 1 and counts["companies"] == 73 and counts["daily_prices"] == 3
+    assert counts["transactions"] == 1 and counts["companies"] == 74 and counts["daily_prices"] == 3
     with pytest.raises(RuntimeError, match="--replace"):
         copy_database(seeded, target, log=lambda *_: None)
     copy_database(seeded, target, replace=True, log=lambda *_: None)

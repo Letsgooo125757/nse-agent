@@ -400,7 +400,7 @@ them from annual-report PDFs is planned for a later phase.
 pytest -q
 ```
 
-There are 151 tests. The database tests use an embedded throwaway Postgres
+There are 152 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
