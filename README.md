@@ -286,6 +286,16 @@ nse-agent import-financials data/fundamentals/financials_2026-10.csv
 nse-agent import-dividends data/fundamentals/dividends_2026-10.csv
 ```
 
+**Batch 1 (November 2026)** adds NCBA, SBIC, SCBK, IMH, DTK, EABL, BAT, KQ,
+TOTL, BRIT, JUB and CIC. Load it with
+`nse-agent import-financials data/fundamentals/financials_2026-11-batch1.csv`.
+Coverage varies by company: SBIC, IMH, BAT, EABL and KQ come from the
+published statements; NCBA, SCBK and DTK from analyst or NSE summaries; TOTL,
+BRIT, JUB and CIC are partial. A blank cell means the figure was not printed in
+the source, never a guess. `notes` says which is which. Shares outstanding are
+left blank unless a source states them, so market cap is not filled for these.
+Companies with negative equity or a loss (such as KQ) show no P/E, ROE or payout.
+
 - **Sources:** every row has a `source_url`, preferring the audited results
   on nse.co.ke, and a `notes` column that says what each figure means.
 - **What the figures mean:** `net_income` is profit attributable to
@@ -400,7 +410,7 @@ them from annual-report PDFs is planned for a later phase.
 pytest -q
 ```
 
-There are 152 tests. The database tests use an embedded throwaway Postgres
+There are 156 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.

@@ -368,10 +368,13 @@ WITH fy AS (
 )
 SELECT lp.ticker, lp.name, lp.sector_code, lp.trade_date, lp.close,
        fy.period_end AS fy_period_end, fy.eps, fy.dps,
-       ROUND(lp.close / NULLIF(fy.eps, 0), 2)                          AS pe_ratio,
+       -- A loss (EPS <= 0) or negative equity makes P/E, ROE and payout meaningless
+       -- (a loss over negative equity would even look like a positive ROE), so they are NULL.
+       CASE WHEN fy.eps > 0 THEN ROUND(lp.close / fy.eps, 2) END       AS pe_ratio,
        ROUND(100 * fy.dps / NULLIF(lp.close, 0), 2)                    AS dividend_yield_pct,
-       ROUND(100 * fy.net_income / NULLIF(fy.total_equity, 0), 2)      AS roe_pct,
-       ROUND(fy.dps / NULLIF(fy.eps, 0), 2)                            AS payout_ratio
+       CASE WHEN fy.total_equity > 0
+            THEN ROUND(100 * fy.net_income / fy.total_equity, 2) END   AS roe_pct,
+       CASE WHEN fy.eps > 0 THEN ROUND(fy.dps / fy.eps, 2) END         AS payout_ratio
 FROM v_latest_prices lp
 LEFT JOIN fy ON fy.ticker = lp.ticker;
 
