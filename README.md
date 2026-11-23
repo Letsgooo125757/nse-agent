@@ -296,6 +296,15 @@ the source, never a guess. `notes` says which is which. Shares outstanding are
 left blank unless a source states them, so market cap is not filled for these.
 Companies with negative equity or a loss (such as KQ) show no P/E, ROE or payout.
 
+**Batch 2 (November 2026)** adds FMLY, NMG, SCAN, CARB, LBTY, HFCB, KUKZ, UNGA
+and SLAM. Load it with
+`nse-agent import-financials data/fundamentals/financials_2026-11-batch2.csv`.
+FMLY, NMG, SCAN, CARB and LBTY come from published statements; HFCB is from an
+analyst note (EPS and DPS left blank); KUKZ, UNGA and SLAM are partial and come
+from announcements or press reports. Not loaded because no consistent source was
+found: SASN, CTUM, PORT, CABL and UMME. BAMB and BKG are also left out
+(Bamburi's listing status is unclear; BK Group reports in RWF).
+
 - **Sources:** every row has a `source_url`, preferring the audited results
   on nse.co.ke, and a `notes` column that says what each figure means.
 - **What the figures mean:** `net_income` is profit attributable to
@@ -410,7 +419,7 @@ them from annual-report PDFs is planned for a later phase.
 pytest -q
 ```
 
-There are 156 tests. The database tests use an embedded throwaway Postgres
+There are 157 tests. The database tests use an embedded throwaway Postgres
 (`pgserver`), so no setup is needed. To run them against another server, set
 `TEST_DATABASE_URL`. The tests drop the `public` schema there, so never point
 it at real data. Network calls are replaced by fixtures in `tests/fixtures/`.
