@@ -305,6 +305,15 @@ from announcements or press reports. Not loaded because no consistent source was
 found: SASN, CTUM, PORT, CABL and UMME. BAMB and BKG are also left out
 (Bamburi's listing status is unclear; BK Group reports in RWF).
 
+**Batch 3 (November 2026)** adds NSE, CRWN, CGEN, WTK, KAPC, BOC, EGAD, LIMT,
+TPSE, XPRS, SMER and HAFR. Load it with
+`nse-agent import-financials data/fundamentals/financials_2026-11-batch3.csv`.
+NSE and CRWN come from published statements and CGEN from headline figures
+only. The other nine come from an aggregator (StockAnalysis.com, S&P Global
+data), not the filed statements, so treat them as indicative; most have no
+balance sheet or dividend. Standard Group (SGL) is not loaded because only
+data up to 2024 was found.
+
 - **Sources:** every row has a `source_url`, preferring the audited results
   on nse.co.ke, and a `notes` column that says what each figure means.
 - **What the figures mean:** `net_income` is profit attributable to
